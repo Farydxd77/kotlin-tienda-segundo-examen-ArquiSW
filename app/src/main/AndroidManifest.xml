@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ✅ PERMISOS EXISTENTES -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- ✅ NUEVOS PERMISOS PARA ARCHIVOS -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- Para Android 13+ (API 33+) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ArquiPrimerParcial"
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- ✅ FileProvider para compartir archivos PDF -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- ✅ NUEVA ACTIVITY: Reportes -->
+        <activity
+            android:name=".presentacion.ui.ReportesActivity"
+            android:exported="false" />
+
+        <!-- ACTIVIDADES EXISTENTES -->
+        <activity
+            android:name=".presentacion.ui.CategoriaActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".presentacion.ui.ProductoActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".presentacion.ui.OperacionCategoriaActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".presentacion.ui.CrearPedidoActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".presentacion.ui.HistorialPedidosActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".presentacion.ui.OperacionProductoActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".presentacion.ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>
