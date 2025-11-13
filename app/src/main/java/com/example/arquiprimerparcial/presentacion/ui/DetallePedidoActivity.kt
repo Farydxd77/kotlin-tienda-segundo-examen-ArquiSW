@@ -75,7 +75,7 @@ class DetallePedidoActivity : AppCompatActivity() {
         }
     }
 
-    private fun mostrarDatos(pedido: com.example.arquiprimerparcial.model.Pedido) {
+    private fun mostrarDatos(pedido: com.example.arquiprimerparcial.data.dao.Pedido) {
         binding.tvNumeroPedido.text = "Pedido #${pedido.id.toString().padStart(4, '0')}"
         binding.tvNombreCliente.text = pedido.nombreCliente
         binding.tvTotal.text = "Total: S/ ${"%.2f".format(pedido.total)}"

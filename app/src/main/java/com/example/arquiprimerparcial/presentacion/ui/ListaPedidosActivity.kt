@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.arquiprimerparcial.databinding.ActivityListaPedidosBinding
 import com.example.arquiprimerparcial.databinding.ItemPedidoEstadoBinding
-import com.example.arquiprimerparcial.model.Pedido
+import com.example.arquiprimerparcial.data.dao.Pedido
 import com.example.arquiprimerparcial.negocio.servicio.PedidoServicio
 import com.example.arquiprimerparcial.presentacion.common.UiState
 import com.example.arquiprimerparcial.presentacion.common.makeCall

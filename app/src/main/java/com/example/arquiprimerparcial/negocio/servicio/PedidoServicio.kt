@@ -1,6 +1,7 @@
 package com.example.arquiprimerparcial.negocio.servicio
 
 import com.example.arquiprimerparcial.data.dao.DetallePedidoDao
+import com.example.arquiprimerparcial.data.dao.Pedido
 import com.example.arquiprimerparcial.data.dao.PedidoDao
 import com.example.arquiprimerparcial.data.dao.ProductoDao
 import com.example.arquiprimerparcial.model.ResultadoDescuento
@@ -164,5 +165,37 @@ class PedidoServicio {
             total += cantidad * precioUnitario
         }
         return total
+    }
+
+    // ✅ MÉTODOS FALTANTES PARA STATE PATTERN
+
+    /**
+     * 🔄 STATE PATTERN - Obtener pedido por ID
+     */
+    fun obtenerPedidoPorId(idPedido: Int): Pedido? {
+        return pedidoDao.obtenerPorId(idPedido)
+    }
+
+    /**
+     * 🔄 STATE PATTERN - Actualizar estado del pedido
+     */
+    fun actualizarEstadoPedido(idPedido: Int, nuevoEstado: String): Result<Boolean> {
+        return try {
+            val resultado = pedidoDao.actualizarEstado(idPedido, nuevoEstado)
+            if (resultado) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Error al actualizar el estado"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 🔄 STATE PATTERN - Listar todos los pedidos
+     */
+    fun listarPedidos(): List<Pedido> {
+        return pedidoDao.listarTodos()
     }
 }
