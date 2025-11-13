@@ -5,107 +5,7 @@ import java.sql.Timestamp
 
 class PedidoDao {
 
-    fun listar(): List<Array<Any>> {
-        val lista = mutableListOf<Array<Any>>()
 
-        PostgresqlConexion.getConexion().use { conexion ->
-            val sql = """
-                SELECT id, nombre_cliente, fecha_pedido, total 
-                FROM pedido 
-                ORDER BY fecha_pedido DESC
-            """
-            conexion.prepareStatement(sql).use { ps ->
-                ps.executeQuery().use { rs ->
-                    while (rs.next()) {
-                        lista.add(
-                            arrayOf(
-                                rs.getInt("id"),
-                                rs.getString("nombre_cliente"),
-                                rs.getTimestamp("fecha_pedido"),
-                                rs.getDouble("total")
-                            )
-                        )
-                    }
-                }
-            }
-        }
-        return lista
-    }
-
-    fun listarPorFecha(fechaInicio: Timestamp, fechaFin: Timestamp): List<Array<Any>> {
-        val lista = mutableListOf<Array<Any>>()
-
-        PostgresqlConexion.getConexion().use { conexion ->
-            val sql = """
-                SELECT id, nombre_cliente, fecha_pedido, total 
-                FROM pedido 
-                WHERE fecha_pedido BETWEEN ? AND ?
-                ORDER BY fecha_pedido DESC
-            """
-            conexion.prepareStatement(sql).use { ps ->
-                ps.setTimestamp(1, fechaInicio)
-                ps.setTimestamp(2, fechaFin)
-                ps.executeQuery().use { rs ->
-                    while (rs.next()) {
-                        lista.add(
-                            arrayOf(
-                                rs.getInt("id"),
-                                rs.getString("nombre_cliente"),
-                                rs.getTimestamp("fecha_pedido"),
-                                rs.getDouble("total")
-                            )
-                        )
-                    }
-                }
-            }
-        }
-        return lista
-    }
-
-    fun insertar(nombreCliente: String, fechaPedido: Timestamp?, total: Double): Int {
-        return try {
-            PostgresqlConexion.getConexion().use { conexion ->
-                val sql = """
-                    INSERT INTO pedido (nombre_cliente, fecha_pedido, total) 
-                    VALUES (?, ?, ?) 
-                    RETURNING id
-                """
-                conexion.prepareStatement(sql).use { ps ->
-                    ps.setString(1, nombreCliente)
-                    ps.setTimestamp(2, fechaPedido ?: Timestamp(System.currentTimeMillis()))
-                    ps.setDouble(3, total)
-
-                    ps.executeQuery().use { rs ->
-                        if (rs.next()) rs.getInt("id") else 0
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0
-        }
-    }
-
-    fun actualizar(id: Int, nombreCliente: String, total: Double): Boolean {
-        return try {
-            PostgresqlConexion.getConexion().use { conexion ->
-                val sql = """
-                    UPDATE pedido 
-                    SET nombre_cliente = ?, total = ?
-                    WHERE id = ?
-                """
-                conexion.prepareStatement(sql).use { ps ->
-                    ps.setString(1, nombreCliente)
-                    ps.setDouble(2, total)
-                    ps.setInt(3, id)
-                    ps.executeUpdate() > 0
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
 
     fun eliminar(id: Int): Boolean {
         return try {
@@ -122,27 +22,80 @@ class PedidoDao {
         }
     }
 
-    fun obtenerPorId(id: Int): Array<Any>? {
+
+
+
+
+    fun insertar(nombreCliente: String, fechaPedido: Timestamp, total: Double): Int {
+        val connection = PostgresqlConexion.getConexion()
+        val sql = """
+            INSERT INTO pedido (nombre_cliente, fecha_pedido, total, estado) 
+            VALUES (?, ?, ?, 'PENDIENTE')
+        """.trimIndent()
+
         return try {
-            PostgresqlConexion.getConexion().use { conexion ->
-                val sql = """
-                    SELECT id, nombre_cliente, fecha_pedido, total 
-                    FROM pedido 
-                    WHERE id = ?
-                """
-                conexion.prepareStatement(sql).use { ps ->
-                    ps.setInt(1, id)
-                    ps.executeQuery().use { rs ->
-                        if (rs.next()) {
-                            arrayOf(
-                                rs.getInt("id"),
-                                rs.getString("nombre_cliente"),
-                                rs.getTimestamp("fecha_pedido"),
-                                rs.getDouble("total")
-                            )
-                        } else null
-                    }
-                }
+            val statement = connection.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)
+            statement.setString(1, nombreCliente)
+            statement.setTimestamp(2, fechaPedido)
+            statement.setDouble(3, total)
+
+            statement.executeUpdate()
+
+            val generatedKeys = statement.generatedKeys
+            if (generatedKeys.next()) {
+                generatedKeys.getInt(1)
+            } else {
+                0
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            0
+        }
+    }
+
+    /**
+     * 🔄 Actualizar estado del pedido
+     */
+    fun actualizarEstado(idPedido: Int, nuevoEstado: String): Boolean {
+        val connection =  PostgresqlConexion.getConexion()
+        val sql = "UPDATE pedido SET estado = ? WHERE id = ?"
+
+        return try {
+            val statement = connection.prepareStatement(sql)
+            statement.setString(1, nuevoEstado)
+            statement.setInt(2, idPedido)
+
+            val filasAfectadas = statement.executeUpdate()
+            filasAfectadas > 0
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * Obtener pedido por ID
+     */
+    fun obtenerPorId(idPedido: Int): Pedido? {
+        val connection =  PostgresqlConexion.getConexion()
+        val sql = "SELECT * FROM pedido WHERE id = ?"
+
+        return try {
+            val statement = connection.prepareStatement(sql)
+            statement.setInt(1, idPedido)
+
+            val resultSet = statement.executeQuery()
+
+            if (resultSet.next()) {
+                Pedido(
+                    id = resultSet.getInt("id"),
+                    nombreCliente = resultSet.getString("nombre_cliente"),
+                    fechaPedido = resultSet.getTimestamp("fecha_pedido"),
+                    total = resultSet.getDouble("total"),
+                    estado = resultSet.getString("estado") ?: "PENDIENTE"
+                )
+            } else {
+                null
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -150,64 +103,32 @@ class PedidoDao {
         }
     }
 
-    fun obtenerTotalVentasPorFecha(fecha: Timestamp): Double {
-        return try {
-            PostgresqlConexion.getConexion().use { conexion ->
-                val sql = """
-                    SELECT COALESCE(SUM(total), 0) as total_ventas
-                    FROM pedido 
-                    WHERE DATE(fecha_pedido) = DATE(?)
-                """
-                conexion.prepareStatement(sql).use { ps ->
-                    ps.setTimestamp(1, fecha)
-                    ps.executeQuery().use { rs ->
-                        if (rs.next()) rs.getDouble("total_ventas") else 0.0
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0.0
-        }
-    }
+    /**
+     * Listar todos los pedidos
+     */
+    fun listarTodos(): List<Pedido> {
+        val connection =  PostgresqlConexion.getConexion()
+        val sql = "SELECT * FROM pedido ORDER BY fecha_pedido DESC"
+        val pedidos = mutableListOf<Pedido>()
 
-    fun calcularVentasDia(): Double {
-        return try {
-            PostgresqlConexion.getConexion().use { conexion ->
-                val sql = """
-                    SELECT COALESCE(SUM(total), 0) as total_ventas
-                    FROM pedido 
-                    WHERE DATE(fecha_pedido) = CURRENT_DATE
-                """
-                conexion.prepareStatement(sql).use { ps ->
-                    ps.executeQuery().use { rs ->
-                        if (rs.next()) rs.getDouble("total_ventas") else 0.0
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            0.0
-        }
-    }
+        try {
+            val statement = connection.createStatement()
+            val resultSet = statement.executeQuery(sql)
 
-    fun contarPedidosHoy(): Int {
-        return try {
-            PostgresqlConexion.getConexion().use { conexion ->
-                val sql = """
-                    SELECT COUNT(*) as total
-                    FROM pedido 
-                    WHERE DATE(fecha_pedido) = CURRENT_DATE
-                """
-                conexion.prepareStatement(sql).use { ps ->
-                    ps.executeQuery().use { rs ->
-                        if (rs.next()) rs.getInt("total") else 0
-                    }
-                }
+            while (resultSet.next()) {
+                val pedido = Pedido(
+                    id = resultSet.getInt("id"),
+                    nombreCliente = resultSet.getString("nombre_cliente"),
+                    fechaPedido = resultSet.getTimestamp("fecha_pedido"),
+                    total = resultSet.getDouble("total"),
+                    estado = resultSet.getString("estado") ?: "PENDIENTE"
+                )
+                pedidos.add(pedido)
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            0
         }
+
+        return pedidos
     }
 }

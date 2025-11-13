@@ -3,20 +3,63 @@ package com.example.arquiprimerparcial.negocio.servicio
 import com.example.arquiprimerparcial.data.dao.DetallePedidoDao
 import com.example.arquiprimerparcial.data.dao.PedidoDao
 import com.example.arquiprimerparcial.data.dao.ProductoDao
+import com.example.arquiprimerparcial.model.ResultadoDescuento
+import com.example.arquiprimerparcial.strategy.DescuentoStrategy
+import com.example.arquiprimerparcial.strategy.DescuentoStrategyFactory
 import java.sql.Timestamp
 
 class PedidoServicio {
 
-    // Instancias privadas de los DAOs
     private val pedidoDao: PedidoDao = PedidoDao()
     private val detallePedidoDao: DetallePedidoDao = DetallePedidoDao()
     private val productoDao: ProductoDao = ProductoDao()
+
+    // 🎯 PATRÓN STRATEGY - Estrategia de descuento actual
+    private var descuentoStrategy: DescuentoStrategy = DescuentoStrategyFactory.obtenerStrategy(null)
+
+    /**
+     * 🎯 STRATEGY PATTERN - Cambiar estrategia de descuento dinámicamente
+     */
+    fun establecerEstrategiaDescuento(codigoDescuento: String?) {
+        descuentoStrategy = DescuentoStrategyFactory.obtenerStrategy(codigoDescuento)
+    }
+
+    /**
+     * 🎯 STRATEGY PATTERN - Aplicar descuento usando la estrategia actual
+     */
+    fun aplicarDescuento(subtotal: Double, codigoDescuento: String?): ResultadoDescuento {
+        val strategy = DescuentoStrategyFactory.obtenerStrategy(codigoDescuento)
+
+        if (!strategy.esValido(subtotal)) {
+            return ResultadoDescuento(
+                esValido = false,
+                mensaje = "El código de descuento requiere una compra mínima mayor",
+                subtotal = subtotal,
+                descuentoAplicado = 0.0,
+                total = subtotal,
+                codigoDescuento = codigoDescuento ?: ""
+            )
+        }
+
+        val descuento = strategy.calcularDescuento(subtotal)
+        val total = subtotal - descuento
+
+        return ResultadoDescuento(
+            esValido = true,
+            mensaje = strategy.getMensaje(),
+            subtotal = subtotal,
+            descuentoAplicado = descuento,
+            total = total,
+            codigoDescuento = strategy.getCodigoDescuento()
+        )
+    }
 
     fun crearPedidoPrimitivo(pedidoData: Map<String, Any>): Result<Int> {
         return try {
             val nombreCliente = pedidoData["nombreCliente"] as String
             @Suppress("UNCHECKED_CAST")
             val detalles = pedidoData["detalles"] as List<Map<String, Any>>
+            val codigoDescuento = pedidoData["codigoDescuento"] as? String
 
             val detallesArray = detalles.map { detalle ->
                 arrayOf<Any>(
@@ -26,13 +69,17 @@ class PedidoServicio {
                 )
             }
 
-            crearPedido(nombreCliente, detallesArray)
+            crearPedido(nombreCliente, detallesArray, codigoDescuento)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    fun crearPedido(nombreCliente: String, detalles: List<Array<Any>>): Result<Int> {
+    fun crearPedido(
+        nombreCliente: String,
+        detalles: List<Array<Any>>,
+        codigoDescuento: String? = null
+    ): Result<Int> {
         return try {
             if (nombreCliente.isBlank()) {
                 return Result.failure(Exception("El nombre del cliente es requerido"))
@@ -63,7 +110,10 @@ class PedidoServicio {
                 }
             }
 
-            val total = calcularTotalDetalles(detalles)
+            // 🎯 APLICAR STRATEGY DE DESCUENTO
+            val subtotal = calcularTotalDetalles(detalles)
+            val resultadoDescuento = aplicarDescuento(subtotal, codigoDescuento)
+            val total = resultadoDescuento.total
 
             val idPedido = pedidoDao.insertar(
                 nombreCliente = nombreCliente.trim(),
@@ -106,7 +156,6 @@ class PedidoServicio {
         }
     }
 
-
     fun calcularTotalDetalles(detalles: List<Array<Any>>): Double {
         var total = 0.0
         for (detalle in detalles) {
@@ -116,5 +165,4 @@ class PedidoServicio {
         }
         return total
     }
-
 }
