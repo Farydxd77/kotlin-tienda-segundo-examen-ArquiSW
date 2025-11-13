@@ -10,22 +10,20 @@ import com.example.arquiprimerparcial.databinding.ActivityDetallePedidoBinding
 import com.example.arquiprimerparcial.negocio.servicio.PedidoServicio
 import com.example.arquiprimerparcial.presentacion.common.UiState
 import com.example.arquiprimerparcial.presentacion.common.makeCall
-import com.example.arquiprimerparcial.state.ContextoPedido
-import com.example.arquiprimerparcial.state.impl.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 /**
- * 🔄 DETALLE DEL PEDIDO
- * Aquí se cambian los estados usando STATE pattern
+ * DETALLE DEL PEDIDO
+ * Muestra información del pedido
  */
 class DetallePedidoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityDetallePedidoBinding
     private val pedidoServicio = PedidoServicio()
 
-    private var contextoPedido: ContextoPedido? = null
     private var idPedido: Int = 0
+    private var estadoActual: String = "PENDIENTE"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,16 +52,7 @@ class DetallePedidoActivity : AppCompatActivity() {
                         return@let
                     }
 
-                    // Crear contexto con estado actual
-                    val estadoActual = obtenerEstadoPorNombre(pedido.estado)
-
-                    contextoPedido = ContextoPedido(
-                        idPedido = pedido.id,
-                        nombreCliente = pedido.nombreCliente,
-                        total = pedido.total,
-                        estado = estadoActual
-                    )
-
+                    estadoActual = pedido.estado
                     mostrarDatos(pedido)
                     actualizarUI()
                 }
@@ -83,116 +72,80 @@ class DetallePedidoActivity : AppCompatActivity() {
     }
 
     private fun initListeners() {
-        // 🔄 BOTÓN: Comenzar Preparación
         binding.btnComenzarPreparacion.setOnClickListener {
-            ejecutarOperacion("comenzar preparación") { ctx ->
-                ctx.comenzarPreparacion()
-            }
+            cambiarEstado("PREPARANDO")
         }
 
-        // 🔄 BOTÓN: Marcar como Listo
         binding.btnMarcarListo.setOnClickListener {
-            ejecutarOperacion("marcar como listo") { ctx ->
-                ctx.marcarListo()
-            }
+            cambiarEstado("LISTO")
         }
 
-        // 🔄 BOTÓN: Confirmar Entrega
         binding.btnConfirmarEntrega.setOnClickListener {
-            ejecutarOperacion("confirmar entrega") { ctx ->
-                ctx.confirmarEntrega()
-            }
+            cambiarEstado("ENTREGADO")
         }
 
-        // 🔄 BOTÓN: Cancelar
         binding.btnCancelar.setOnClickListener {
             MaterialAlertDialogBuilder(this)
                 .setTitle("Cancelar Pedido")
                 .setMessage("¿Estás seguro?")
                 .setPositiveButton("Sí") { _, _ ->
-                    ejecutarOperacion("cancelar") { ctx ->
-                        ctx.cancelar()
-                    }
+                    cambiarEstado("CANCELADO")
                 }
                 .setNegativeButton("No", null)
                 .show()
         }
 
-        // Ver historial
         binding.btnVerHistorial.setOnClickListener {
-            mostrarHistorial()
+            Toast.makeText(this, "Estado actual: $estadoActual", Toast.LENGTH_SHORT).show()
         }
     }
 
-    /**
-     * 🔄 Ejecuta una operación delegando al contexto
-     * El contexto delega al estado actual
-     * El estado decide si puede hacerla
-     */
-    private fun ejecutarOperacion(
-        nombreOperacion: String,
-        operacion: (ContextoPedido) -> Unit
-    ) {
-        val ctx = contextoPedido ?: return
+    private fun cambiarEstado(nuevoEstado: String) = lifecycleScope.launch {
+        binding.progressBar.isVisible = true
 
-        val estadoAntes = ctx.obtenerEstadoActual().obtenerNombre()
+        val resultado = pedidoServicio.actualizarEstadoPedido(idPedido, nuevoEstado)
 
-        // ✅ DELEGAR al contexto → contexto delega al estado
-        operacion(ctx)
+        binding.progressBar.isVisible = false
 
-        val estadoDespues = ctx.obtenerEstadoActual().obtenerNombre()
-
-        // Si cambió, actualizar en BD
-        if (estadoAntes != estadoDespues) {
-            lifecycleScope.launch {
-                val resultado = pedidoServicio.actualizarEstadoPedido(idPedido, estadoDespues)
-
-                if (resultado.isSuccess) {
-                    Toast.makeText(
-                        this@DetallePedidoActivity,
-                        "✅ $estadoDespues",
-                        Toast.LENGTH_SHORT
-                    ).show()
-
-                    actualizarUI()
-                } else {
-                    Toast.makeText(
-                        this@DetallePedidoActivity,
-                        "❌ Error al actualizar",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
+        if (resultado.isSuccess) {
+            estadoActual = nuevoEstado
+            Toast.makeText(
+                this@DetallePedidoActivity,
+                "✅ Estado actualizado: $nuevoEstado",
+                Toast.LENGTH_SHORT
+            ).show()
+            actualizarUI()
         } else {
             Toast.makeText(
-                this,
-                "⚠️ No se puede $nombreOperacion en este estado",
+                this@DetallePedidoActivity,
+                "❌ Error al actualizar estado",
                 Toast.LENGTH_SHORT
             ).show()
         }
     }
 
-    /**
-     * 🎨 Actualizar UI según el estado actual
-     */
     private fun actualizarUI() {
-        val ctx = contextoPedido ?: return
-        val estado = ctx.obtenerEstadoActual()
+        // Información del estado
+        val (icono, nombre, descripcion, color, progreso) = when (estadoActual.uppercase()) {
+            "PENDIENTE" -> listOf("🛒", "PENDIENTE", "Pedido recibido, esperando preparación", "#2196F3", 25)
+            "PREPARANDO" -> listOf("📦", "PREPARANDO", "Empaquetando tu pedido", "#FF9800", 50)
+            "LISTO" -> listOf("✅", "LISTO", "¡Listo para recoger!", "#9C27B0", 75)
+            "ENTREGADO" -> listOf("🎉", "ENTREGADO", "¡Pedido completado! Gracias 😊", "#4CAF50", 100)
+            "CANCELADO" -> listOf("❌", "CANCELADO", "Pedido cancelado", "#F44336", 0)
+            else -> listOf("🛒", "PENDIENTE", "Pedido recibido", "#2196F3", 25)
+        }
 
-        // Mostrar estado actual
-        binding.tvEstadoActual.text = "${estado.obtenerIcono()} ${estado.obtenerNombre()}"
-        binding.tvDescripcion.text = estado.obtenerDescripcion()
+        binding.tvEstadoActual.text = "$icono $nombre"
+        binding.tvDescripcion.text = descripcion as String
 
-        // Color del card
-        val color = Color.parseColor(estado.obtenerColor())
-        binding.cardEstado.setCardBackgroundColor(color)
+        val colorInt = Color.parseColor(color as String)
+        binding.cardEstado.setCardBackgroundColor(colorInt)
 
-        // Barra de progreso
-        binding.progressBar2.progress = estado.obtenerProgreso()
-        binding.tvProgreso.text = "${estado.obtenerProgreso()}%"
+        binding.progressBar2.progress = progreso as Int
+        binding.tvProgreso.text = "$progreso%"
 
         // Botones según estado
-        when (estado.obtenerNombre()) {
+        when (estadoActual.uppercase()) {
             "PENDIENTE" -> {
                 binding.btnComenzarPreparacion.isVisible = true
                 binding.btnMarcarListo.isVisible = false
@@ -223,35 +176,6 @@ class DetallePedidoActivity : AppCompatActivity() {
                 binding.btnConfirmarEntrega.isVisible = false
                 binding.btnCancelar.isEnabled = false
             }
-        }
-    }
-
-    private fun mostrarHistorial() {
-        val ctx = contextoPedido ?: return
-        val historial = ctx.obtenerHistorial()
-
-        val mensaje = buildString {
-            append("📋 HISTORIAL\n\n")
-            historial.forEachIndexed { index, estado ->
-                append("${index + 1}. $estado\n")
-            }
-        }
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Historial de Estados")
-            .setMessage(mensaje)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    private fun obtenerEstadoPorNombre(nombre: String): com.example.arquiprimerparcial.state.EstadoPedido {
-        return when (nombre.uppercase()) {
-            "PENDIENTE" -> EstadoPendiente()
-            "PREPARANDO" -> EstadoPreparando()
-            "LISTO" -> EstadoListo()
-            "ENTREGADO" -> EstadoEntregado()
-            "CANCELADO" -> EstadoCancelado()
-            else -> EstadoPendiente()
         }
     }
 }

@@ -79,6 +79,11 @@
             </intent-filter>
         </activity>
 
+        <!-- ❌ FALTA ESTO -->
+        <activity
+            android:name=".presentacion.ui.SeleccionarProductoDecoradorActivity"
+            android:exported="false" />
+
     </application>
 
 </manifest>

@@ -16,11 +16,10 @@ import com.example.arquiprimerparcial.data.dao.Pedido
 import com.example.arquiprimerparcial.negocio.servicio.PedidoServicio
 import com.example.arquiprimerparcial.presentacion.common.UiState
 import com.example.arquiprimerparcial.presentacion.common.makeCall
-import com.example.arquiprimerparcial.state.impl.*
 import kotlinx.coroutines.launch
 
 /**
- * 🔄 LISTA DE PEDIDOS CON ESTADOS
+ * LISTA DE PEDIDOS CON ESTADOS
  * Muestra todos los pedidos con su estado visual
  */
 class ListaPedidosActivity : AppCompatActivity() {
@@ -93,8 +92,8 @@ class ListaPedidosActivity : AppCompatActivity() {
         ) : RecyclerView.ViewHolder(binding.root) {
 
             fun bind(pedido: Pedido) {
-                // 🔄 Obtener estado para info visual
-                val estado = obtenerEstadoPorNombre(pedido.estado)
+                // Obtener info visual del estado
+                val (icono, nombre, color, progreso) = obtenerInfoEstado(pedido.estado)
 
                 // Datos del pedido
                 binding.tvNumeroPedido.text = "Pedido #${pedido.id.toString().padStart(4, '0')}"
@@ -102,15 +101,10 @@ class ListaPedidosActivity : AppCompatActivity() {
                 binding.tvTotal.text = "S/ ${"%.2f".format(pedido.total)}"
                 binding.tvFecha.text = pedido.fechaPedido.toString().substring(0, 10)
 
-                // 🔄 Aplicar estado visual
-                binding.tvEstado.text = "${estado.obtenerIcono()} ${estado.obtenerNombre()}"
+                // Aplicar estado visual
+                binding.tvEstado.text = "$icono $nombre"
 
-                val color = Color.parseColor(estado.obtenerColor())
-                binding.cardEstado.setCardBackgroundColor(color)
 
-                // Barra de progreso
-                binding.progressBar.progress = estado.obtenerProgreso()
-                binding.tvProgreso.text = "${estado.obtenerProgreso()}%"
 
                 // Click
                 binding.root.setOnClickListener {
@@ -142,16 +136,16 @@ class ListaPedidosActivity : AppCompatActivity() {
     }
 
     /**
-     * 🔄 Mapea nombre del estado a objeto State
+     * Mapea nombre del estado a información visual
      */
-    private fun obtenerEstadoPorNombre(nombre: String): com.example.arquiprimerparcial.state.EstadoPedido {
+    private fun obtenerInfoEstado(nombre: String): List<Any> {
         return when (nombre.uppercase()) {
-            "PENDIENTE" -> EstadoPendiente()
-            "PREPARANDO" -> EstadoPreparando()
-            "LISTO" -> EstadoListo()
-            "ENTREGADO" -> EstadoEntregado()
-            "CANCELADO" -> EstadoCancelado()
-            else -> EstadoPendiente()
+            "PENDIENTE" -> listOf("🛒", "PENDIENTE", "#2196F3", 25)
+            "PREPARANDO" -> listOf("📦", "PREPARANDO", "#FF9800", 50)
+            "LISTO" -> listOf("✅", "LISTO", "#9C27B0", 75)
+            "ENTREGADO" -> listOf("🎉", "ENTREGADO", "#4CAF50", 100)
+            "CANCELADO" -> listOf("❌", "CANCELADO", "#F44336", 0)
+            else -> listOf("🛒", "PENDIENTE", "#2196F3", 25)
         }
     }
 }

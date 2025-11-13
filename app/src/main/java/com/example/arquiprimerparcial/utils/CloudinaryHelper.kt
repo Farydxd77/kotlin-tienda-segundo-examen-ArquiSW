@@ -27,7 +27,7 @@ object CloudinaryHelper {
 
     suspend fun uploadImage(imageUri: Uri): String = suspendCancellableCoroutine { continuation ->
         MediaManager.get().upload(imageUri)
-            .unsigned("productos_preset)") // Crea un unsigned preset en Cloudinary
+            .unsigned("productos_preset") // Crea un unsigned preset en Cloudinary
             .option("folder", "productos") // Carpeta donde se guardarán las imágenes
             .callback(object : UploadCallback {
                 override fun onStart(requestId: String) {

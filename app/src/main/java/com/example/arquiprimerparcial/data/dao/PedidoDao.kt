@@ -27,6 +27,8 @@ class PedidoDao {
 
 
     fun insertar(nombreCliente: String, fechaPedido: Timestamp, total: Double): Int {
+        require(nombreCliente.isNotBlank()) { "Nombre cliente requerido" }
+        require(total > 0) { "Total debe ser mayor a 0" }
         val connection = PostgresqlConexion.getConexion()
         val sql = """
             INSERT INTO pedido (nombre_cliente, fecha_pedido, total, estado) 
