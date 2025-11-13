@@ -22,7 +22,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 /**
- * 🎨 ACTIVIDAD ARREGLADA: Seleccionar producto REAL y decorarlo
+ * 🎨 ACTIVIDAD: Seleccionar producto REAL y decorarlo
  *
  * FLUJO:
  * 1. Ver productos de tu BD
@@ -34,7 +34,7 @@ class SeleccionarProductoDecoradorActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySeleccionarProductoDecoradorBinding
     private val productoServicio = ProductoServicio()
-    private val decoradorServicio = ProductoDecoradorServicio()
+    private val decoradorServicio = ProductoDecoradorServicio(productoServicio)
 
     private lateinit var adapter: ProductoAdapter
     private var productoSeleccionado: Map<String, Any>? = null
@@ -127,7 +127,6 @@ class SeleccionarProductoDecoradorActivity : AppCompatActivity() {
 
     private fun mostrarOpcionesDecorado(producto: Map<String, Any>) {
         val nombre = producto["nombre"] as String
-        val precio = producto["precio"] as Double
 
         Toast.makeText(this, "✅ $nombre seleccionado", Toast.LENGTH_SHORT).show()
 
@@ -216,7 +215,7 @@ class SeleccionarProductoDecoradorActivity : AppCompatActivity() {
 
         var precioTotal = precioBase
         val descripcion = StringBuilder()
-        descripcion.append("$nombre")
+        descripcion.append(nombre)
 
         if (extrasSeleccionados.isNotEmpty()) {
             for (extra in extrasSeleccionados) {
@@ -243,7 +242,11 @@ class SeleccionarProductoDecoradorActivity : AppCompatActivity() {
     }
 
     private fun agregarAlPedido(nombreCompleto: String, precioTotal: Double) {
-        val intent = intent
+        val producto = productoSeleccionado ?: return
+        val idProducto = producto["id"] as Int
+
+        val intent = android.content.Intent()
+        intent.putExtra("producto_id", idProducto)  // ✅ IMPORTANTE: Agregar ID
         intent.putExtra("producto_nombre", nombreCompleto)
         intent.putExtra("producto_precio", precioTotal)
         intent.putExtra("producto_descripcion", "Producto personalizado con decoradores")

@@ -37,6 +37,10 @@ class CrearPedidoActivity : AppCompatActivity() {
     private var codigoDescuentoActual: String? = null
     private var cantidadTotal = 0
 
+    companion object {
+        private const val REQUEST_CODE_DECORADOR = 1001
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCrearPedidoBinding.inflate(layoutInflater)
@@ -89,9 +93,15 @@ class CrearPedidoActivity : AppCompatActivity() {
             limpiarPedido()
         }
 
-        // 🎯 NUEVO: Botón para aplicar descuento
+        // 🎯 STRATEGY: Botón para aplicar descuento
         binding.btnAplicarDescuento.setOnClickListener {
             mostrarDialogoDescuentos()
+        }
+
+        // 🎨 DECORATOR: Botón para productos decorados
+        binding.btnProductosDecorados.setOnClickListener {
+            val intent = Intent(this, SeleccionarProductoDecoradorActivity::class.java)
+            startActivityForResult(intent, REQUEST_CODE_DECORADOR)
         }
 
         binding.etBuscarProducto.addTextChangedListener(object : android.text.TextWatcher {
@@ -101,6 +111,79 @@ class CrearPedidoActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
+    }
+
+    // 🎨 DECORATOR: Recibir producto decorado
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == REQUEST_CODE_DECORADOR && resultCode == RESULT_OK && data != null) {
+            val idProducto = data.getIntExtra("producto_id", 0)
+            val nombreCompleto = data.getStringExtra("producto_nombre") ?: return
+            val precioTotal = data.getDoubleExtra("producto_precio", 0.0)
+            val descripcion = data.getStringExtra("producto_descripcion") ?: ""
+
+            // Agregar como un producto especial decorado
+            agregarProductoDecorado(idProducto, nombreCompleto, precioTotal, descripcion)
+        }
+    }
+
+    private fun agregarProductoDecorado(
+        idProducto: Int,
+        nombreCompleto: String,
+        precioTotal: Double,
+        descripcion: String
+    ) {
+        // Verificar si ya existe este producto decorado
+        val detalleExistente = detallesPedido.find {
+            it["idProducto"] == idProducto &&
+                    it["nombreProducto"] == nombreCompleto &&
+                    it["esDecorado"] == true
+        }
+
+        if (detalleExistente != null) {
+            // Incrementar cantidad
+            val index = detallesPedido.indexOf(detalleExistente)
+            val cantidadActual = detalleExistente["cantidad"] as Int
+            val nuevaCantidad = cantidadActual + 1
+
+            val detalleActualizado = detalleExistente.toMutableMap()
+            detalleActualizado["cantidad"] = nuevaCantidad
+            detalleActualizado["subtotal"] = precioTotal * nuevaCantidad
+
+            detallesPedido[index] = detalleActualizado
+
+            android.widget.Toast.makeText(
+                this,
+                "✅ Cantidad actualizada: $nombreCompleto",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            // Crear nuevo detalle
+            val detalle = mapOf(
+                "idProducto" to idProducto,
+                "nombreProducto" to nombreCompleto,
+                "precioUnitario" to precioTotal,
+                "cantidad" to 1,
+                "subtotal" to precioTotal,
+                "esDecorado" to true  // 🎨 Marcar como decorado
+            )
+
+            detallesPedido.add(detalle)
+
+            android.widget.Toast.makeText(
+                this,
+                "🎨 $nombreCompleto agregado (DECORATOR)",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+
+        // Recalcular descuento si hay
+        if (codigoDescuentoActual != null) {
+            aplicarDescuento(codigoDescuentoActual)
+        }
+
+        actualizarUI()
     }
 
     // ==========================================
@@ -240,24 +323,28 @@ class CrearPedidoActivity : AppCompatActivity() {
                 val precioUnitario = detalle["precioUnitario"] as Double
                 val cantidad = detalle["cantidad"] as Int
                 val subtotal = detalle["subtotal"] as Double
+                val esDecorado = detalle["esDecorado"] as? Boolean ?: false
 
-                binding.tvNombreProducto.text = nombreProducto
+                // 🎨 Si es decorado, mostrar icono especial
+                val nombreMostrar = if (esDecorado) "🎨 $nombreProducto" else nombreProducto
+
+                binding.tvNombreProducto.text = nombreMostrar
                 binding.tvPrecioUnitario.text = "S/ ${"%.2f".format(precioUnitario)}"
                 binding.tvCantidad.text = cantidad.toString()
                 binding.tvSubtotal.text = "S/ ${"%.2f".format(subtotal)}"
 
                 binding.btnMenos.setOnClickListener {
                     if (cantidad > 1) {
-                        modificarCantidad(idProducto, cantidad - 1)
+                        modificarCantidad(idProducto, nombreProducto, cantidad - 1, esDecorado)
                     }
                 }
 
                 binding.btnMas.setOnClickListener {
-                    modificarCantidad(idProducto, cantidad + 1)
+                    modificarCantidad(idProducto, nombreProducto, cantidad + 1, esDecorado)
                 }
 
                 binding.btnEliminar.setOnClickListener {
-                    eliminarDetalle(idProducto)
+                    eliminarDetalle(idProducto, nombreProducto, esDecorado)
                 }
             }
         }
@@ -308,18 +395,21 @@ class CrearPedidoActivity : AppCompatActivity() {
         val nombre = producto["nombre"] as String
         val precio = producto["precio"] as Double
 
-        val detalleExistente = detallesPedido.find { it["idProducto"] == idProducto }
+        val detalleExistente = detallesPedido.find {
+            it["idProducto"] == idProducto && it["esDecorado"] != true
+        }
 
         if (detalleExistente != null) {
             val cantidadActual = detalleExistente["cantidad"] as Int
-            modificarCantidad(idProducto, cantidadActual + cantidad)
+            modificarCantidad(idProducto, nombre, cantidadActual + cantidad, false)
         } else {
             val detalle = mapOf(
                 "idProducto" to idProducto,
                 "nombreProducto" to nombre,
                 "precioUnitario" to precio,
                 "cantidad" to cantidad,
-                "subtotal" to (precio * cantidad)
+                "subtotal" to (precio * cantidad),
+                "esDecorado" to false
             )
             detallesPedido.add(detalle)
         }
@@ -332,8 +422,13 @@ class CrearPedidoActivity : AppCompatActivity() {
         actualizarUI()
     }
 
-    private fun modificarCantidad(idProducto: Int, nuevaCantidad: Int) {
-        val index = detallesPedido.indexOfFirst { it["idProducto"] == idProducto }
+    private fun modificarCantidad(idProducto: Int, nombreProducto: String, nuevaCantidad: Int, esDecorado: Boolean) {
+        val index = detallesPedido.indexOfFirst {
+            it["idProducto"] == idProducto &&
+                    it["nombreProducto"] == nombreProducto &&
+                    it["esDecorado"] == esDecorado
+        }
+
         if (index != -1) {
             val detalle = detallesPedido[index].toMutableMap()
             val precio = detalle["precioUnitario"] as Double
@@ -350,8 +445,12 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
     }
 
-    private fun eliminarDetalle(idProducto: Int) {
-        detallesPedido.removeAll { it["idProducto"] == idProducto }
+    private fun eliminarDetalle(idProducto: Int, nombreProducto: String, esDecorado: Boolean) {
+        detallesPedido.removeAll {
+            it["idProducto"] == idProducto &&
+                    it["nombreProducto"] == nombreProducto &&
+                    it["esDecorado"] == esDecorado
+        }
 
         // 🎯 Recalcular descuento
         if (detallesPedido.isEmpty()) {
@@ -432,76 +531,6 @@ class CrearPedidoActivity : AppCompatActivity() {
         return true
     }
 
-//    private fun confirmarPedido() = lifecycleScope.launch {
-//        binding.progressBar.isVisible = true
-//        val nombreCliente = binding.etNombreCliente.text.toString().trim()
-//
-//        val pedidoData = mapOf(
-//            "nombreCliente" to nombreCliente,
-//            "detalles" to detallesPedido,
-//            // 🎯 IMPORTANTE: Usar el total CON descuento
-//            "total" to totalConDescuento,
-//            "codigoDescuento" to (codigoDescuentoActual ?: ""),
-//            "subtotal" to subtotalOriginal,
-//            "descuento" to descuentoAplicado
-//        )
-//
-//        makeCall { pedidoServicio.crearPedidoPrimitivo(pedidoData) }.let { result ->
-//            binding.progressBar.isVisible = false
-//
-//            when (result) {
-//                is UiState.Error -> mostrarError(result.message)
-//                is UiState.Success -> {
-//                    if (result.data.isSuccess) {
-//                        val pedidoId = result.data.getOrNull() ?: 0
-//
-//                        val mensaje = buildString {
-//                            append("✅ Pedido #$pedidoId creado exitosamente\n\n")
-//                            if (descuentoAplicado > 0) {
-//                                append("💰 Ahorro: S/ ${"%.2f".format(descuentoAplicado)}\n")
-//                            }
-//                            append("Total pagado: S/ ${"%.2f".format(totalConDescuento)}")
-//                        }
-//
-//                        mostrarExito(mensaje)
-//                        limpiarPedido()
-//                    } else {
-//                        mostrarError(result.data.exceptionOrNull()?.message ?: "Error al crear pedido")
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-    private fun limpiarPedido() {
-        detallesPedido.clear()
-        binding.etNombreCliente.text?.clear()
-        codigoDescuentoActual = null
-        descuentoAplicado = 0.0
-        subtotalOriginal = 0.0
-        totalConDescuento = 0.0
-        binding.tvDescuentoInfo.isVisible = false
-        actualizarUI()
-    }
-
-    private fun mostrarError(mensaje: String) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Error")
-            .setMessage(mensaje)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    private fun mostrarExito(mensaje: String) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Éxito")
-            .setMessage(mensaje)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    // 🔥 AGREGAR EN CrearPedidoActivity al final del método confirmarPedido()
-
     private fun confirmarPedido() = lifecycleScope.launch {
         binding.progressBar.isVisible = true
         val nombreCliente = binding.etNombreCliente.text.toString().trim()
@@ -555,4 +584,30 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
     }
 
+    private fun limpiarPedido() {
+        detallesPedido.clear()
+        binding.etNombreCliente.text?.clear()
+        codigoDescuentoActual = null
+        descuentoAplicado = 0.0
+        subtotalOriginal = 0.0
+        totalConDescuento = 0.0
+        binding.tvDescuentoInfo.isVisible = false
+        actualizarUI()
+    }
+
+    private fun mostrarError(mensaje: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Error")
+            .setMessage(mensaje)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+    private fun mostrarExito(mensaje: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Éxito")
+            .setMessage(mensaje)
+            .setPositiveButton("OK", null)
+            .show()
+    }
 }
