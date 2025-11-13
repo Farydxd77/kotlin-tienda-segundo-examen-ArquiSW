@@ -1,25 +1,20 @@
 package com.example.arquiprimerparcial.negocio.servicio
 
 import com.example.arquiprimerparcial.decorator.ProductoComponente
-import com.example.arquiprimerparcial.decorator.productos.Hamburguesa
-import com.example.arquiprimerparcial.decorator.productos.Lomito
-import com.example.arquiprimerparcial.decorator.productos.PolloFrito
+import com.example.arquiprimerparcial.decorator.productos.ProductoBaseBD
 import com.example.arquiprimerparcial.decorator.extras.*
 
 /**
- * 🎨 SERVICIO DE PRODUCTOS DECORADOS
- * Gestiona la creación de productos base y sus decoradores
+ * 🎨 SERVICIO DE DECORACIÓN DE PRODUCTOS REALES
+ *
+ * Implementación CORRECTA del patrón Decorator:
+ * 1. Toma productos existentes de BD
+ * 2. Los envuelve con decoradores (extras)
+ * 3. Devuelve el producto decorado con precio y descripción actualizados
  */
-class ProductoDecoradorServicio {
-
-    /**
-     * Tipos de productos base disponibles
-     */
-    enum class TipoProductoBase {
-        POLLO_FRITO,
-        HAMBURGUESA,
-        LOMITO
-    }
+class ProductoDecoradorServicio(
+    private val productoServicio: ProductoServicio
+) {
 
     /**
      * Tipos de extras/decoradores disponibles
@@ -33,57 +28,20 @@ class ProductoDecoradorServicio {
     }
 
     /**
-     * Obtener precio base de un producto
-     */
-    fun obtenerPrecioBase(tipo: TipoProductoBase): Double {
-        return when (tipo) {
-            TipoProductoBase.POLLO_FRITO -> 15.0
-            TipoProductoBase.HAMBURGUESA -> 12.0
-            TipoProductoBase.LOMITO -> 18.0
-        }
-    }
-
-    /**
-     * Obtener precio de un extra
-     */
-    fun obtenerPrecioExtra(tipo: TipoExtra): Double {
-        return when (tipo) {
-            TipoExtra.PAPAS -> 3.0
-            TipoExtra.REFRESCO -> 2.5
-            TipoExtra.ARROZ -> 2.0
-            TipoExtra.QUESO -> 1.5
-            TipoExtra.TOCINO -> 2.5
-        }
-    }
-
-    /**
-     * Crear producto base sin decorar
-     */
-    fun crearProductoBase(tipo: TipoProductoBase): ProductoComponente {
-        return when (tipo) {
-            TipoProductoBase.POLLO_FRITO -> PolloFrito()
-            TipoProductoBase.HAMBURGUESA -> Hamburguesa()
-            TipoProductoBase.LOMITO -> Lomito()
-        }
-    }
-
-    /**
-     * 🎨 APLICAR DECORADORES - Patrón Decorator en acción
+     * 🎨 DECORATOR PATTERN - Aplicar decoradores a un producto real
      *
-     * Aplica múltiples decoradores a un producto base
-     *
-     * Ejemplo:
-     * - Base: Lomito ($18)
-     * - Extras: [PAPAS, REFRESCO, QUESO]
-     * - Resultado: Lomito + Papas + Refresco + Queso ($25)
+     * @param idProducto ID del producto en la base de datos
+     * @param extras Lista de extras a agregar
+     * @return ProductoComponente decorado con precio actualizado
      */
-    fun aplicarDecoradores(
-        productoBase: ProductoComponente,
-        extras: List<TipoExtra>
-    ): ProductoComponente {
-        var productoDecorado: ProductoComponente = productoBase
+    fun decorarProductoDeBD(idProducto: Int, extras: List<TipoExtra>): ProductoComponente? {
+        // 1️⃣ Obtener producto real de BD
+        val productoArray = productoServicio.obtenerProductoPorId(idProducto) ?: return null
 
-        // Aplicar cada decorador en secuencia
+        // 2️⃣ Convertir a ProductoComponente (base para decorar)
+        var productoDecorado: ProductoComponente = ProductoBaseBD(productoArray)
+
+        // 3️⃣ Aplicar cada decorador en secuencia
         for (extra in extras) {
             productoDecorado = when (extra) {
                 TipoExtra.PAPAS -> ConPapas(productoDecorado)
@@ -98,43 +56,16 @@ class ProductoDecoradorServicio {
     }
 
     /**
-     * Crear producto decorado completo desde tipos
+     * Obtener precio de un extra
      */
-    fun crearProductoDecorado(
-        tipoBase: TipoProductoBase,
-        extras: List<TipoExtra>
-    ): ProductoComponente {
-        val base = crearProductoBase(tipoBase)
-        return aplicarDecoradores(base, extras)
-    }
-
-    /**
-     * Listar todos los productos base disponibles
-     */
-    fun listarProductosBase(): List<Map<String, Any>> {
-        return listOf(
-            mapOf(
-                "tipo" to TipoProductoBase.POLLO_FRITO,
-                "nombre" to "Pollo Frito",
-                "descripcion" to "Pollo frito crujiente",
-                "precio" to 15.0,
-                "icono" to "🍗"
-            ),
-            mapOf(
-                "tipo" to TipoProductoBase.HAMBURGUESA,
-                "nombre" to "Hamburguesa",
-                "descripcion" to "Hamburguesa clásica con carne",
-                "precio" to 12.0,
-                "icono" to "🍔"
-            ),
-            mapOf(
-                "tipo" to TipoProductoBase.LOMITO,
-                "nombre" to "Lomito",
-                "descripcion" to "Lomito saltado peruano",
-                "precio" to 18.0,
-                "icono" to "🥩"
-            )
-        )
+    fun obtenerPrecioExtra(tipo: TipoExtra): Double {
+        return when (tipo) {
+            TipoExtra.PAPAS -> 3.0
+            TipoExtra.REFRESCO -> 2.5
+            TipoExtra.ARROZ -> 2.0
+            TipoExtra.QUESO -> 1.5
+            TipoExtra.TOCINO -> 2.5
+        }
     }
 
     /**
@@ -176,10 +107,12 @@ class ProductoDecoradorServicio {
     }
 
     /**
-     * Formatear precio para mostrar
+     * Listar productos decorables de la BD
+     * (puedes filtrar por categoría, ej: "COMIDA")
      */
-    fun formatearPrecio(precio: Double): String {
-        return String.format("%.2f", precio)
+    fun listarProductosDecorables(): List<Map<String, Any>> {
+        return productoServicio.listarProductosPrimitivos("")
+            .filter { it["activo"] as Boolean } // Solo activos
     }
 
     /**
@@ -192,5 +125,12 @@ class ProductoDecoradorServicio {
             "precio" to producto.obtenerPrecio(),
             "precioFormateado" to "S/ ${formatearPrecio(producto.obtenerPrecio())}"
         )
+    }
+
+    /**
+     * Formatear precio para mostrar
+     */
+    fun formatearPrecio(precio: Double): String {
+        return String.format("%.2f", precio)
     }
 }

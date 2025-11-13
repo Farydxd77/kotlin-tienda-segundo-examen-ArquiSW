@@ -9,6 +9,7 @@
         layout="@layout/layout_toolbar" />
 
     <ScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize">
@@ -18,56 +19,40 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-            <!-- Card: Seleccionar Producto Base -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_productos_base"
-                android:layout_width="0dp"
+            <!-- Título: Selecciona un Producto -->
+            <TextView
+                android:id="@+id/tv_titulo_productos"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="4dp"
+                android:text="🍽️ Selecciona un Producto Real"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <!-- RecyclerView: Lista de productos REALES -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_productos"
+                android:layout_width="0dp"
+                android:layout_height="400dp"
+                android:layout_marginTop="12dp"
+                android:nestedScrollingEnabled="false"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toBottomOf="@+id/tv_titulo_productos" />
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/tv_titulo_productos_base"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🍽️ Selecciona tu Producto Base"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chip_group_productos_base"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        app:chipSpacingHorizontal="8dp"
-                        app:layout_constraintTop_toBottomOf="@+id/tv_titulo_productos_base"
-                        app:singleSelection="true" />
-
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Card: Agregar Extras -->
+            <!-- Card: Agregar Extras (Decoradores) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_extras"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="4dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/card_productos_base">
+                app:layout_constraintTop_toBottomOf="@+id/rv_productos">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -89,8 +74,8 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Selecciona uno o más extras para tu producto"
-                        android:textColor="@color/grey"
+                        android:text="Ejemplo: Papas, Arroz, Queso, Tocino..."
+                        android:textColor="@android:color/darker_gray"
                         android:textSize="14sp"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
@@ -113,8 +98,8 @@
                 android:id="@+id/card_resumen"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/primaryLight"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="#457B9D"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="8dp"
                 app:layout_constraintEnd_toEndOf="parent"
@@ -143,7 +128,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:minHeight="60dp"
-                        android:text="Selecciona un producto base"
+                        android:text="Selecciona un producto"
                         android:textColor="@color/white"
                         android:textSize="16sp"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -189,8 +174,10 @@
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
                 android:orientation="horizontal"
+                app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/card_resumen">
@@ -212,7 +199,7 @@
                     android:layout_height="60dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="2"
-                    android:backgroundTint="@color/accent"
+                    android:backgroundTint="#F77071"
                     android:enabled="false"
                     android:text="➕ Agregar al Pedido"
                     android:textColor="@color/white"
@@ -222,5 +209,12 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
