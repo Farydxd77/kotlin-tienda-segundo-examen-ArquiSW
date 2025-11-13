@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.view.isVisible
@@ -36,6 +37,21 @@ class CrearPedidoActivity : AppCompatActivity() {
     private var totalConDescuento = 0.0
     private var codigoDescuentoActual: String? = null
     private var cantidadTotal = 0
+
+    // 🎨 DECORATOR - ActivityResultLauncher para productos decorados
+    private val productoDecoradorLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data = result.data
+            val nombre = data?.getStringExtra("producto_nombre") ?: return@registerForActivityResult
+            val precio = data.getDoubleExtra("producto_precio", 0.0)
+            val descripcion = data.getStringExtra("producto_descripcion") ?: ""
+
+            // Agregar producto decorado al pedido
+            agregarProductoDecorado(nombre, precio, descripcion)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,9 +105,14 @@ class CrearPedidoActivity : AppCompatActivity() {
             limpiarPedido()
         }
 
-        // 🎯 NUEVO: Botón para aplicar descuento
+        // 🎯 STRATEGY: Botón para aplicar descuento
         binding.btnAplicarDescuento.setOnClickListener {
             mostrarDialogoDescuentos()
+        }
+
+        // 🎨 DECORATOR: Botón para productos decorados
+        binding.btnProductosDecorados.setOnClickListener {
+            abrirSeleccionProductosDecorados()
         }
 
         binding.etBuscarProducto.addTextChangedListener(object : android.text.TextWatcher {
@@ -101,6 +122,39 @@ class CrearPedidoActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
+    }
+
+    // 🎨 DECORATOR: Abrir activity de productos decorados
+    private fun abrirSeleccionProductosDecorados() {
+        val intent = Intent(this, SeleccionarProductoDecoradorActivity::class.java)
+        productoDecoradorLauncher.launch(intent)
+    }
+
+    // 🎨 DECORATOR: Agregar producto decorado al pedido
+    private fun agregarProductoDecorado(nombre: String, precio: Double, descripcion: String) {
+        val detalle = mapOf(
+            "idProducto" to -1, // ID especial para productos decorados
+            "nombreProducto" to nombre,
+            "precioUnitario" to precio,
+            "cantidad" to 1,
+            "subtotal" to precio,
+            "esProductoDecorado" to true,
+            "descripcion" to descripcion
+        )
+        detallesPedido.add(detalle)
+
+        // Recalcular descuento si hay uno aplicado
+        if (codigoDescuentoActual != null) {
+            aplicarDescuento(codigoDescuentoActual)
+        }
+
+        actualizarUI()
+
+        android.widget.Toast.makeText(
+            this,
+            "✅ $nombre agregado",
+            android.widget.Toast.LENGTH_SHORT
+        ).show()
     }
 
     // ==========================================
@@ -187,7 +241,7 @@ class CrearPedidoActivity : AppCompatActivity() {
     }
 
     // ==========================================
-    // ADAPTADORES (sin cambios)
+    // ADAPTADORES
     // ==========================================
 
     inner class ProductoAdapter : RecyclerView.Adapter<ProductoAdapter.ProductoViewHolder>() {
@@ -240,20 +294,34 @@ class CrearPedidoActivity : AppCompatActivity() {
                 val precioUnitario = detalle["precioUnitario"] as Double
                 val cantidad = detalle["cantidad"] as Int
                 val subtotal = detalle["subtotal"] as Double
+                val esDecorado = detalle["esProductoDecorado"] as? Boolean ?: false
 
-                binding.tvNombreProducto.text = nombreProducto
+                // 🎨 Mostrar indicador si es producto decorado
+                val nombreMostrar = if (esDecorado) {
+                    "🎨 $nombreProducto"
+                } else {
+                    nombreProducto
+                }
+
+                binding.tvNombreProducto.text = nombreMostrar
                 binding.tvPrecioUnitario.text = "S/ ${"%.2f".format(precioUnitario)}"
                 binding.tvCantidad.text = cantidad.toString()
                 binding.tvSubtotal.text = "S/ ${"%.2f".format(subtotal)}"
 
+                // Deshabilitar modificación de cantidad para productos decorados
+                binding.btnMenos.isEnabled = !esDecorado && cantidad > 1
+                binding.btnMas.isEnabled = !esDecorado
+
                 binding.btnMenos.setOnClickListener {
-                    if (cantidad > 1) {
+                    if (!esDecorado && cantidad > 1) {
                         modificarCantidad(idProducto, cantidad - 1)
                     }
                 }
 
                 binding.btnMas.setOnClickListener {
-                    modificarCantidad(idProducto, cantidad + 1)
+                    if (!esDecorado) {
+                        modificarCantidad(idProducto, cantidad + 1)
+                    }
                 }
 
                 binding.btnEliminar.setOnClickListener {
@@ -319,7 +387,8 @@ class CrearPedidoActivity : AppCompatActivity() {
                 "nombreProducto" to nombre,
                 "precioUnitario" to precio,
                 "cantidad" to cantidad,
-                "subtotal" to (precio * cantidad)
+                "subtotal" to (precio * cantidad),
+                "esProductoDecorado" to false
             )
             detallesPedido.add(detalle)
         }
@@ -432,76 +501,6 @@ class CrearPedidoActivity : AppCompatActivity() {
         return true
     }
 
-//    private fun confirmarPedido() = lifecycleScope.launch {
-//        binding.progressBar.isVisible = true
-//        val nombreCliente = binding.etNombreCliente.text.toString().trim()
-//
-//        val pedidoData = mapOf(
-//            "nombreCliente" to nombreCliente,
-//            "detalles" to detallesPedido,
-//            // 🎯 IMPORTANTE: Usar el total CON descuento
-//            "total" to totalConDescuento,
-//            "codigoDescuento" to (codigoDescuentoActual ?: ""),
-//            "subtotal" to subtotalOriginal,
-//            "descuento" to descuentoAplicado
-//        )
-//
-//        makeCall { pedidoServicio.crearPedidoPrimitivo(pedidoData) }.let { result ->
-//            binding.progressBar.isVisible = false
-//
-//            when (result) {
-//                is UiState.Error -> mostrarError(result.message)
-//                is UiState.Success -> {
-//                    if (result.data.isSuccess) {
-//                        val pedidoId = result.data.getOrNull() ?: 0
-//
-//                        val mensaje = buildString {
-//                            append("✅ Pedido #$pedidoId creado exitosamente\n\n")
-//                            if (descuentoAplicado > 0) {
-//                                append("💰 Ahorro: S/ ${"%.2f".format(descuentoAplicado)}\n")
-//                            }
-//                            append("Total pagado: S/ ${"%.2f".format(totalConDescuento)}")
-//                        }
-//
-//                        mostrarExito(mensaje)
-//                        limpiarPedido()
-//                    } else {
-//                        mostrarError(result.data.exceptionOrNull()?.message ?: "Error al crear pedido")
-//                    }
-//                }
-//            }
-//        }
-//    }
-
-    private fun limpiarPedido() {
-        detallesPedido.clear()
-        binding.etNombreCliente.text?.clear()
-        codigoDescuentoActual = null
-        descuentoAplicado = 0.0
-        subtotalOriginal = 0.0
-        totalConDescuento = 0.0
-        binding.tvDescuentoInfo.isVisible = false
-        actualizarUI()
-    }
-
-    private fun mostrarError(mensaje: String) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Error")
-            .setMessage(mensaje)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    private fun mostrarExito(mensaje: String) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Éxito")
-            .setMessage(mensaje)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    // 🔥 AGREGAR EN CrearPedidoActivity al final del método confirmarPedido()
-
     private fun confirmarPedido() = lifecycleScope.launch {
         binding.progressBar.isVisible = true
         val nombreCliente = binding.etNombreCliente.text.toString().trim()
@@ -513,7 +512,7 @@ class CrearPedidoActivity : AppCompatActivity() {
             "codigoDescuento" to (codigoDescuentoActual ?: ""),
             "subtotal" to subtotalOriginal,
             "descuento" to descuentoAplicado,
-            "estado" to "PENDIENTE"  // 🔄 IMPORTANTE: Estado inicial
+            "estado" to "PENDIENTE"
         )
 
         makeCall { pedidoServicio.crearPedidoPrimitivo(pedidoData) }.let { result ->
@@ -538,7 +537,6 @@ class CrearPedidoActivity : AppCompatActivity() {
                             .setTitle("Pedido Creado")
                             .setMessage(mensaje)
                             .setPositiveButton("Ver Pedidos") { _, _ ->
-                                // 🔥 IR A LISTA DE PEDIDOS
                                 val intent = Intent(this@CrearPedidoActivity, ListaPedidosActivity::class.java)
                                 startActivity(intent)
                                 finish()
@@ -555,4 +553,22 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
     }
 
+    private fun limpiarPedido() {
+        detallesPedido.clear()
+        binding.etNombreCliente.text?.clear()
+        codigoDescuentoActual = null
+        descuentoAplicado = 0.0
+        subtotalOriginal = 0.0
+        totalConDescuento = 0.0
+        binding.tvDescuentoInfo.isVisible = false
+        actualizarUI()
+    }
+
+    private fun mostrarError(mensaje: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Error")
+            .setMessage(mensaje)
+            .setPositiveButton("OK", null)
+            .show()
+    }
 }

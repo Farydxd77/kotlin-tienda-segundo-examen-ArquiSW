@@ -69,7 +69,7 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 🎯 NUEVO: Card de Descuento -->
+            <!-- 🎯 Card de Descuento (STRATEGY) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_descuento"
                 android:layout_width="0dp"
@@ -91,7 +91,7 @@
                         android:id="@+id/tv_titulo_descuento"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🎯 Aplicar Código de Descuento"
+                        android:text="🎯 Aplicar Código de Descuento (STRATEGY)"
                         android:textColor="@color/primary"
                         android:textSize="16sp"
                         android:textStyle="bold"
@@ -131,6 +131,65 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 🎨 Card de Productos Decorados (DECORATOR) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_productos_decorados"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="#FFF3E0"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/card_descuento">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tv_titulo_decorados"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:text="🎨 Productos Decorados (DECORATOR)"
+                        android:textColor="#FF6B35"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/tv_descripcion_decorados"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Pollo, Hamburguesa, Lomito + Extras"
+                        android:textSize="14sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/tv_titulo_decorados" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_productos_decorados"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:backgroundTint="#FF6B35"
+                        android:text="🍔 Seleccionar y Decorar"
+                        android:textColor="@color/white"
+                        app:cornerRadius="8dp"
+                        app:icon="@android:drawable/ic_input_add"
+                        app:iconTint="@color/white"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/tv_descripcion_decorados" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Resumen del Pedido -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_resumen"
@@ -142,7 +201,7 @@
                 app:cardElevation="4dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/card_descuento">
+                app:layout_constraintTop_toBottomOf="@+id/card_productos_decorados">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -243,7 +302,7 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Búsqueda y Lista de Productos -->
+            <!-- Búsqueda y Lista de Productos Normales -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_productos"
                 android:layout_width="0dp"
@@ -263,7 +322,7 @@
                         android:id="@+id/tv_titulo_productos"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Seleccionar Productos"
+                        android:text="Productos del Catálogo"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         app:layout_constraintStart_toStartOf="parent"
