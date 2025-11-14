@@ -197,6 +197,8 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
 
         if (codigoDescuentoActual != null) {
+            // ✅ Re-establecer la estrategia antes de aplicar
+            pedidoServicio.establecerEstrategiaDescuento(codigoDescuentoActual)
             aplicarDescuento(codigoDescuentoActual)
         }
 
@@ -221,7 +223,7 @@ class CrearPedidoActivity : AppCompatActivity() {
         )
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("🎯 Aplicar Código de Descuento")
+            .setTitle("🎯 Aplicar Código de Descuento (STRATEGY)")
             .setItems(opciones) { _, which ->
                 val codigo = when (which) {
                     0 -> "NAVIDAD2024"
@@ -230,6 +232,8 @@ class CrearPedidoActivity : AppCompatActivity() {
                     else -> null
                 }
 
+                // ✅ CORRECTO: Establece la estrategia primero
+                pedidoServicio.establecerEstrategiaDescuento(codigo)
                 aplicarDescuento(codigo)
             }
             .setNegativeButton("Cancelar", null)
@@ -245,8 +249,9 @@ class CrearPedidoActivity : AppCompatActivity() {
             subtotalOriginal += (detalle["subtotal"] as Double)
         }
 
-        // 🎯 Usar el STRATEGY PATTERN
-        val resultado = pedidoServicio.aplicarDescuento(subtotalOriginal, codigo)
+        // 🎯 STRATEGY PATTERN CORRECTO
+        // La estrategia ya fue establecida en mostrarDialogoDescuentos()
+        val resultado = pedidoServicio.aplicarDescuento(subtotalOriginal)
 
         if (resultado.esValido) {
             descuentoAplicado = resultado.descuentoAplicado
@@ -520,6 +525,8 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
 
         if (codigoDescuentoActual != null) {
+            // ✅ Re-establecer la estrategia antes de aplicar
+            pedidoServicio.establecerEstrategiaDescuento(codigoDescuentoActual)
             aplicarDescuento(codigoDescuentoActual)
         }
 
@@ -546,9 +553,10 @@ class CrearPedidoActivity : AppCompatActivity() {
             detallesPedido[index] = detalle
 
             if (codigoDescuentoActual != null) {
+                // ✅ Re-establecer la estrategia antes de aplicar
+                pedidoServicio.establecerEstrategiaDescuento(codigoDescuentoActual)
                 aplicarDescuento(codigoDescuentoActual)
             }
-
             actualizarUI()
         }
     }

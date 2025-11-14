@@ -7,6 +7,7 @@ import com.example.arquiprimerparcial.data.dao.ProductoDao
 import com.example.arquiprimerparcial.model.ResultadoDescuento
 import com.example.arquiprimerparcial.strategy.DescuentoStrategy
 import com.example.arquiprimerparcial.strategy.DescuentoStrategyFactory
+import com.example.arquiprimerparcial.strategy.impl.SinDescuentoStrategy
 import java.sql.Timestamp
 
 class PedidoServicio {
@@ -16,10 +17,12 @@ class PedidoServicio {
     private val productoDao: ProductoDao = ProductoDao()
 
     // 🎯 PATRÓN STRATEGY - Estrategia de descuento actual
-    private var descuentoStrategy: DescuentoStrategy = DescuentoStrategyFactory.obtenerStrategy(null)
+    // ✅ CORRECTO: Mantiene UNA referencia a la estrategia
+    private var descuentoStrategy: DescuentoStrategy = SinDescuentoStrategy()
 
     /**
      * 🎯 STRATEGY PATTERN - Cambiar estrategia de descuento dinámicamente
+     * ✅ CORRECTO: Permite cambiar la estrategia en tiempo de ejecución
      */
     fun establecerEstrategiaDescuento(codigoDescuento: String?) {
         descuentoStrategy = DescuentoStrategyFactory.obtenerStrategy(codigoDescuento)
@@ -27,32 +30,44 @@ class PedidoServicio {
 
     /**
      * 🎯 STRATEGY PATTERN - Aplicar descuento usando la estrategia actual
+     * ✅ CORRECTO: USA la estrategia almacenada, NO crea una nueva
      */
-    fun aplicarDescuento(subtotal: Double, codigoDescuento: String?): ResultadoDescuento {
-        val strategy = DescuentoStrategyFactory.obtenerStrategy(codigoDescuento)
-
-        if (!strategy.esValido(subtotal)) {
+    fun aplicarDescuento(subtotal: Double): ResultadoDescuento {
+        // ✅ USA descuentoStrategy almacenado
+        if (!descuentoStrategy.esValido(subtotal)) {
             return ResultadoDescuento(
                 esValido = false,
                 mensaje = "El código de descuento requiere una compra mínima mayor",
                 subtotal = subtotal,
                 descuentoAplicado = 0.0,
                 total = subtotal,
-                codigoDescuento = codigoDescuento ?: ""
+                codigoDescuento = descuentoStrategy.getCodigoDescuento()
             )
         }
 
-        val descuento = strategy.calcularDescuento(subtotal)
+        val descuento = descuentoStrategy.calcularDescuento(subtotal)
         val total = subtotal - descuento
 
         return ResultadoDescuento(
             esValido = true,
-            mensaje = strategy.getMensaje(),
+            mensaje = descuentoStrategy.getMensaje(),
             subtotal = subtotal,
             descuentoAplicado = descuento,
             total = total,
-            codigoDescuento = strategy.getCodigoDescuento()
+            codigoDescuento = descuentoStrategy.getCodigoDescuento()
         )
+    }
+
+    /**
+     * 🎯 STRATEGY PATTERN - Versión simplificada que establece y aplica en un solo paso
+     * Para mantener compatibilidad con código existente
+     */
+    fun aplicarDescuentoConCodigo(subtotal: Double, codigoDescuento: String?): ResultadoDescuento {
+        // Establece la estrategia según el código
+        establecerEstrategiaDescuento(codigoDescuento)
+
+        // Aplica el descuento usando la estrategia establecida
+        return aplicarDescuento(subtotal)
     }
 
     fun crearPedidoPrimitivo(pedidoData: Map<String, Any>): Result<Int> {
@@ -113,7 +128,9 @@ class PedidoServicio {
 
             // 🎯 APLICAR STRATEGY DE DESCUENTO
             val subtotal = calcularTotalDetalles(detalles)
-            val resultadoDescuento = aplicarDescuento(subtotal, codigoDescuento)
+
+            // ✅ CORRECTO: Establece la estrategia y aplica el descuento
+            val resultadoDescuento = aplicarDescuentoConCodigo(subtotal, codigoDescuento)
             val total = resultadoDescuento.total
 
             val idPedido = pedidoDao.insertar(
