@@ -1,23 +1,31 @@
 package com.example.arquiprimerparcial.strategy.impl
 
 import com.example.arquiprimerparcial.strategy.DescuentoStrategy
+import com.example.arquiprimerparcial.strategy.ResultadoDescuento
 
 
 class DescuentoNavidenoStrategy : DescuentoStrategy {
     private val porcentaje = 15.0
     private val montoMinimo = 50.0
 
-    override fun calcularDescuento(subtotal: Double): Double {
-        return subtotal * (porcentaje / 100)
-    }
+    override fun aplicarDescuento(subtotal: Double): ResultadoDescuento {
+        val esValido = subtotal >= montoMinimo
+        val descuento = if (esValido) subtotal * (porcentaje / 100) else 0.0
+        val total = subtotal - descuento
 
-    override fun esValido(subtotal: Double): Boolean {
-        return subtotal >= montoMinimo
-    }
+        val mensaje = if (esValido) {
+            "✅ Descuento Navideño aplicado: $porcentaje% OFF"
+        } else {
+            "⚠️ Descuento Navideño requiere compra mínima de S/ $montoMinimo"
+        }
 
-    override fun getMensaje(): String {
-        return "Descuento Navideño aplicado: $porcentaje% OFF"
+        return ResultadoDescuento(
+            esValido = esValido,
+            mensaje = mensaje,
+            subtotal = subtotal,
+            descuentoAplicado = descuento,
+            total = total,
+            codigoDescuento = "NAVIDAD2024"
+        )
     }
-
-    override fun getCodigoDescuento(): String = "NAVIDAD2024"
 }

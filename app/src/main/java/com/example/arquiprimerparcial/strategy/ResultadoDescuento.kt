@@ -1,4 +1,4 @@
-package com.example.arquiprimerparcial.model
+package com.example.arquiprimerparcial.strategy
 
 
 data class ResultadoDescuento(

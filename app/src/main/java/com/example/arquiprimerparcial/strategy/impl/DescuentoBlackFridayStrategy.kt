@@ -1,6 +1,7 @@
 package com.example.arquiprimerparcial.strategy.impl
 
 import com.example.arquiprimerparcial.strategy.DescuentoStrategy
+import com.example.arquiprimerparcial.strategy.ResultadoDescuento
 
 
 class DescuentoBlackFridayStrategy : DescuentoStrategy {
@@ -8,22 +9,29 @@ class DescuentoBlackFridayStrategy : DescuentoStrategy {
     private val porcentajeExtra = 10.0
     private val umbralExtra = 500.0
 
-    override fun calcularDescuento(subtotal: Double): Double {
+    override fun aplicarDescuento(subtotal: Double): ResultadoDescuento {
         val porcentaje = if (subtotal >= umbralExtra) {
-            porcentajeBase + porcentajeExtra // 40% total
+            porcentajeBase + porcentajeExtra // 40%
         } else {
             porcentajeBase // 30%
         }
-        return subtotal * (porcentaje / 100)
-    }
 
-    override fun esValido(subtotal: Double): Boolean {
-        return true // Siempre válido
-    }
+        val descuento = subtotal * (porcentaje / 100)
+        val total = subtotal - descuento
 
-    override fun getMensaje(): String {
-        return "Black Friday: 30% OFF (40% si compras más de \$500)"
-    }
+        val mensaje = if (subtotal >= umbralExtra) {
+            "🔥 Black Friday: ${porcentaje.toInt()}% OFF (¡40% por compra mayor a S/ $umbralExtra!)"
+        } else {
+            "🔥 Black Friday: ${porcentaje.toInt()}% OFF"
+        }
 
-    override fun getCodigoDescuento(): String = "BLACKFRIDAY"
+        return ResultadoDescuento(
+            esValido = true,
+            mensaje = mensaje,
+            subtotal = subtotal,
+            descuentoAplicado = descuento,
+            total = total,
+            codigoDescuento = "BLACKFRIDAY"
+        )
+    }
 }

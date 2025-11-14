@@ -1,23 +1,31 @@
 package com.example.arquiprimerparcial.strategy.impl
 
 import com.example.arquiprimerparcial.strategy.DescuentoStrategy
+import com.example.arquiprimerparcial.strategy.ResultadoDescuento
 
 
 class DescuentoBienvenidaStrategy : DescuentoStrategy {
     private val montoFijo = 10.0
     private val montoMinimo = 30.0
 
-    override fun calcularDescuento(subtotal: Double): Double {
-        return montoFijo
-    }
+    override fun aplicarDescuento(subtotal: Double): ResultadoDescuento {
+        val esValido = subtotal >= montoMinimo
+        val descuento = if (esValido) montoFijo else 0.0
+        val total = subtotal - descuento
 
-    override fun esValido(subtotal: Double): Boolean {
-        return subtotal >= montoMinimo
-    }
+        val mensaje = if (esValido) {
+            "🎉 Descuento de Bienvenida: -S/ $montoFijo"
+        } else {
+            "⚠️ Descuento de Bienvenida requiere compra mínima de S/ $montoMinimo"
+        }
 
-    override fun getMensaje(): String {
-        return "Descuento de Bienvenida: -\$$montoFijo"
+        return ResultadoDescuento(
+            esValido = esValido,
+            mensaje = mensaje,
+            subtotal = subtotal,
+            descuentoAplicado = descuento,
+            total = total,
+            codigoDescuento = "BIENVENIDA"
+        )
     }
-
-    override fun getCodigoDescuento(): String = "BIENVENIDA"
 }
