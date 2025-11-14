@@ -40,9 +40,14 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <!-- ✅ NUEVA ACTIVITY: Reportes -->
+        <!-- ✅ ACTIVITY: Reportes -->
         <activity
             android:name=".presentacion.ui.ReportesActivity"
+            android:exported="false" />
+
+        <!-- ✅ ACTIVITY: Seleccionar Producto Decorador -->
+        <activity
+            android:name=".presentacion.ui.SeleccionarProductoDecoradorActivity"
             android:exported="false" />
 
         <!-- ACTIVIDADES EXISTENTES -->
@@ -78,11 +83,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- ❌ FALTA ESTO -->
-        <activity
-            android:name=".presentacion.ui.SeleccionarProductoDecoradorActivity"
-            android:exported="false" />
 
     </application>
 

@@ -1,3 +1,9 @@
+// ============================================
+// 🎨 CrearPedidoActivity.kt - VERSIÓN COMPLETA
+// ✅ RESPETA ARQUITECTURA 3 CAPAS
+// ✅ DECORATOR + STRATEGY + Extras guardados
+// ============================================
+
 package com.example.arquiprimerparcial.presentacion.ui
 
 import android.content.Intent
@@ -16,16 +22,23 @@ import com.example.arquiprimerparcial.databinding.ItemsProductoBinding
 import com.example.arquiprimerparcial.databinding.ItemsPedidoDetalleBinding
 import com.example.arquiprimerparcial.negocio.servicio.PedidoServicio
 import com.example.arquiprimerparcial.negocio.servicio.ProductoServicio
+import com.example.arquiprimerparcial.negocio.servicio.PedidoExtraServicio
 import com.example.arquiprimerparcial.presentacion.common.UiState
 import com.example.arquiprimerparcial.presentacion.common.makeCall
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.widget.Toast
 
 class CrearPedidoActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityCrearPedidoBinding
+
+    // ✅ SOLO servicios de la capa de NEGOCIO (NO DAOs)
     private val pedidoServicio: PedidoServicio = PedidoServicio()
     private val productoServicio: ProductoServicio = ProductoServicio()
+    private val pedidoExtraServicio = PedidoExtraServicio()
 
     private var listaProductos = mutableListOf<Map<String, Any>>()
     private var detallesPedido = mutableListOf<Map<String, Any>>()
@@ -113,7 +126,9 @@ class CrearPedidoActivity : AppCompatActivity() {
         })
     }
 
+    // ============================================
     // 🎨 DECORATOR: Recibir producto decorado
+    // ============================================
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
@@ -123,18 +138,19 @@ class CrearPedidoActivity : AppCompatActivity() {
             val precioTotal = data.getDoubleExtra("producto_precio", 0.0)
             val descripcion = data.getStringExtra("producto_descripcion") ?: ""
 
-            // Agregar como un producto especial decorado
             agregarProductoDecorado(idProducto, nombreCompleto, precioTotal, descripcion)
         }
     }
 
+    // ============================================
+    // 🎨 DECORATOR: Agregar producto decorado
+    // ============================================
     private fun agregarProductoDecorado(
         idProducto: Int,
         nombreCompleto: String,
         precioTotal: Double,
         descripcion: String
     ) {
-        // Verificar si ya existe este producto decorado
         val detalleExistente = detallesPedido.find {
             it["idProducto"] == idProducto &&
                     it["nombreProducto"] == nombreCompleto &&
@@ -142,7 +158,6 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
 
         if (detalleExistente != null) {
-            // Incrementar cantidad
             val index = detallesPedido.indexOf(detalleExistente)
             val cantidadActual = detalleExistente["cantidad"] as Int
             val nuevaCantidad = cantidadActual + 1
@@ -153,32 +168,34 @@ class CrearPedidoActivity : AppCompatActivity() {
 
             detallesPedido[index] = detalleActualizado
 
-            android.widget.Toast.makeText(
+            Toast.makeText(
                 this,
                 "✅ Cantidad actualizada: $nombreCompleto",
-                android.widget.Toast.LENGTH_SHORT
+                Toast.LENGTH_SHORT
             ).show()
         } else {
-            // Crear nuevo detalle
+            // ✅ USAR SERVICIO para extraer extras (CAPA DE NEGOCIO)
+            val extras = pedidoExtraServicio.extraerExtrasDeNombre(nombreCompleto, precioTotal)
+
             val detalle = mapOf(
                 "idProducto" to idProducto,
                 "nombreProducto" to nombreCompleto,
                 "precioUnitario" to precioTotal,
                 "cantidad" to 1,
                 "subtotal" to precioTotal,
-                "esDecorado" to true  // 🎨 Marcar como decorado
+                "esDecorado" to true,
+                "extras" to extras // ✅ LISTA DE EXTRAS
             )
 
             detallesPedido.add(detalle)
 
-            android.widget.Toast.makeText(
+            Toast.makeText(
                 this,
                 "🎨 $nombreCompleto agregado (DECORATOR)",
-                android.widget.Toast.LENGTH_SHORT
+                Toast.LENGTH_SHORT
             ).show()
         }
 
-        // Recalcular descuento si hay
         if (codigoDescuentoActual != null) {
             aplicarDescuento(codigoDescuentoActual)
         }
@@ -210,7 +227,7 @@ class CrearPedidoActivity : AppCompatActivity() {
                     0 -> "NAVIDAD2024"
                     1 -> "BLACKFRIDAY"
                     2 -> "BIENVENIDA"
-                    else -> null // Sin descuento
+                    else -> null
                 }
 
                 aplicarDescuento(codigo)
@@ -235,7 +252,6 @@ class CrearPedidoActivity : AppCompatActivity() {
             descuentoAplicado = resultado.descuentoAplicado
             totalConDescuento = resultado.total
 
-            // Mostrar info del descuento
             val mensaje = buildString {
                 append("✅ ${resultado.mensaje}\n\n")
                 append("Subtotal: S/ ${"%.2f".format(resultado.subtotal)}\n")
@@ -247,11 +263,7 @@ class CrearPedidoActivity : AppCompatActivity() {
             binding.tvDescuentoInfo.text = mensaje
             binding.tvDescuentoInfo.isVisible = true
 
-            android.widget.Toast.makeText(
-                this,
-                "✅ Descuento aplicado",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "✅ Descuento aplicado", Toast.LENGTH_SHORT).show()
         } else {
             descuentoAplicado = 0.0
             totalConDescuento = subtotalOriginal
@@ -259,18 +271,103 @@ class CrearPedidoActivity : AppCompatActivity() {
             binding.tvDescuentoInfo.text = "⚠️ ${resultado.mensaje}"
             binding.tvDescuentoInfo.isVisible = true
 
-            android.widget.Toast.makeText(
-                this,
-                "⚠️ ${resultado.mensaje}",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(this, "⚠️ ${resultado.mensaje}", Toast.LENGTH_SHORT).show()
         }
 
         actualizarResumen()
     }
 
+    // ============================================
+    // 💾 CONFIRMAR Y GUARDAR PEDIDO
+    // ============================================
+    private fun confirmarPedido() = lifecycleScope.launch {
+        binding.progressBar.isVisible = true
+        val nombreCliente = binding.etNombreCliente.text.toString().trim()
+
+        val pedidoData = mapOf(
+            "nombreCliente" to nombreCliente,
+            "detalles" to detallesPedido,
+            "total" to totalConDescuento,
+            "codigoDescuento" to (codigoDescuentoActual ?: ""),
+            "subtotal" to subtotalOriginal,
+            "descuento" to descuentoAplicado
+        )
+
+        // 1️⃣ Crear el pedido (STRATEGY pattern se aplica aquí)
+        makeCall { pedidoServicio.crearPedidoPrimitivo(pedidoData) }.let { result ->
+            binding.progressBar.isVisible = false
+
+            when (result) {
+                is UiState.Error -> mostrarError(result.message)
+                is UiState.Success -> {
+                    if (result.data.isSuccess) {
+                        val pedidoId = result.data.getOrNull() ?: 0
+
+                        // 2️⃣ ✅ Guardar extras usando SERVICIO (respeta arquitectura)
+                        guardarExtrasDelPedido(pedidoId)
+
+                        val mensaje = buildString {
+                            append("✅ Pedido #$pedidoId creado exitosamente\n\n")
+                            if (descuentoAplicado > 0) {
+                                append("Ahorro: S/ ${"%.2f".format(descuentoAplicado)}\n")
+                            }
+                            append("Total: S/ ${"%.2f".format(totalConDescuento)}")
+                        }
+
+                        MaterialAlertDialogBuilder(this@CrearPedidoActivity)
+                            .setTitle("Pedido Creado")
+                            .setMessage(mensaje)
+                            .setPositiveButton("Ver Historial") { _, _ ->
+                                val intent = Intent(
+                                    this@CrearPedidoActivity,
+                                    HistorialPedidosActivity::class.java
+                                )
+                                startActivity(intent)
+                                finish()
+                            }
+                            .setNegativeButton("Crear Otro") { _, _ ->
+                                limpiarPedido()
+                            }
+                            .show()
+                    } else {
+                        mostrarError(
+                            result.data.exceptionOrNull()?.message ?: "Error al crear pedido"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // ============================================
+    // 🎨 GUARDAR EXTRAS - Usando SERVICIO (3 capas)
+    // ============================================
+    private fun guardarExtrasDelPedido(idPedido: Int) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            // ✅ LLAMAR AL SERVICIO (Capa de NEGOCIO)
+            val resultado = pedidoExtraServicio.guardarExtrasDeProductosDecorados(
+                idPedido,
+                detallesPedido
+            )
+
+            withContext(Dispatchers.Main) {
+                when {
+                    resultado.isSuccess -> {
+                        android.util.Log.d("CrearPedido", "✅ Extras guardados correctamente")
+                    }
+                    else -> {
+                        android.util.Log.e(
+                            "CrearPedido",
+                            "❌ Error: ${resultado.exceptionOrNull()?.message}"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     // ==========================================
-    // ADAPTADORES (sin cambios)
+    // ADAPTADORES
     // ==========================================
 
     inner class ProductoAdapter : RecyclerView.Adapter<ProductoAdapter.ProductoViewHolder>() {
@@ -351,7 +448,11 @@ class CrearPedidoActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DetalleViewHolder {
             return DetalleViewHolder(
-                ItemsPedidoDetalleBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                ItemsPedidoDetalleBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false
+                )
             )
         }
 
@@ -361,6 +462,10 @@ class CrearPedidoActivity : AppCompatActivity() {
             holder.enlazar(detallesPedido[position])
         }
     }
+
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
 
     private fun mostrarDialogoCantidad(producto: Map<String, Any>) {
         val nombre = producto["nombre"] as String
@@ -414,7 +519,6 @@ class CrearPedidoActivity : AppCompatActivity() {
             detallesPedido.add(detalle)
         }
 
-        // 🎯 Recalcular descuento si hay uno aplicado
         if (codigoDescuentoActual != null) {
             aplicarDescuento(codigoDescuentoActual)
         }
@@ -422,7 +526,12 @@ class CrearPedidoActivity : AppCompatActivity() {
         actualizarUI()
     }
 
-    private fun modificarCantidad(idProducto: Int, nombreProducto: String, nuevaCantidad: Int, esDecorado: Boolean) {
+    private fun modificarCantidad(
+        idProducto: Int,
+        nombreProducto: String,
+        nuevaCantidad: Int,
+        esDecorado: Boolean
+    ) {
         val index = detallesPedido.indexOfFirst {
             it["idProducto"] == idProducto &&
                     it["nombreProducto"] == nombreProducto &&
@@ -436,7 +545,6 @@ class CrearPedidoActivity : AppCompatActivity() {
             detalle["subtotal"] = precio * nuevaCantidad
             detallesPedido[index] = detalle
 
-            // 🎯 Recalcular descuento
             if (codigoDescuentoActual != null) {
                 aplicarDescuento(codigoDescuentoActual)
             }
@@ -452,7 +560,6 @@ class CrearPedidoActivity : AppCompatActivity() {
                     it["esDecorado"] == esDecorado
         }
 
-        // 🎯 Recalcular descuento
         if (detallesPedido.isEmpty()) {
             codigoDescuentoActual = null
             descuentoAplicado = 0.0
@@ -485,7 +592,6 @@ class CrearPedidoActivity : AppCompatActivity() {
     }
 
     private fun actualizarResumen() {
-        // Calcular subtotal
         subtotalOriginal = 0.0
         cantidadTotal = 0
 
@@ -494,13 +600,11 @@ class CrearPedidoActivity : AppCompatActivity() {
             cantidadTotal += (detalle["cantidad"] as Int)
         }
 
-        // Si no hay descuento aplicado, el total es el subtotal
         if (codigoDescuentoActual == null) {
             totalConDescuento = subtotalOriginal
             descuentoAplicado = 0.0
         }
 
-        // 🎯 Mostrar con descuento si existe
         if (descuentoAplicado > 0) {
             binding.tvTotalPedido.text = buildString {
                 append("Subtotal: S/ ${"%.2f".format(subtotalOriginal)}\n")
@@ -529,59 +633,6 @@ class CrearPedidoActivity : AppCompatActivity() {
             }
         }
         return true
-    }
-
-    private fun confirmarPedido() = lifecycleScope.launch {
-        binding.progressBar.isVisible = true
-        val nombreCliente = binding.etNombreCliente.text.toString().trim()
-
-        val pedidoData = mapOf(
-            "nombreCliente" to nombreCliente,
-            "detalles" to detallesPedido,
-            "total" to totalConDescuento,
-            "codigoDescuento" to (codigoDescuentoActual ?: ""),
-            "subtotal" to subtotalOriginal,
-            "descuento" to descuentoAplicado,
-            "estado" to "PENDIENTE"  // 🔄 IMPORTANTE: Estado inicial
-        )
-
-        makeCall { pedidoServicio.crearPedidoPrimitivo(pedidoData) }.let { result ->
-            binding.progressBar.isVisible = false
-
-            when (result) {
-                is UiState.Error -> mostrarError(result.message)
-                is UiState.Success -> {
-                    if (result.data.isSuccess) {
-                        val pedidoId = result.data.getOrNull() ?: 0
-
-                        val mensaje = buildString {
-                            append("✅ Pedido #$pedidoId creado\n\n")
-                            append("Estado: 🛒 PENDIENTE\n")
-                            if (descuentoAplicado > 0) {
-                                append("Ahorro: S/ ${"%.2f".format(descuentoAplicado)}\n")
-                            }
-                            append("Total: S/ ${"%.2f".format(totalConDescuento)}")
-                        }
-
-                        MaterialAlertDialogBuilder(this@CrearPedidoActivity)
-                            .setTitle("Pedido Creado")
-                            .setMessage(mensaje)
-                            .setPositiveButton("Ver Pedidos") { _, _ ->
-                                // 🔥 IR A LISTA DE PEDIDOS
-                                val intent = Intent(this@CrearPedidoActivity, ListaPedidosActivity::class.java)
-                                startActivity(intent)
-                                finish()
-                            }
-                            .setNegativeButton("Crear Otro") { _, _ ->
-                                limpiarPedido()
-                            }
-                            .show()
-                    } else {
-                        mostrarError(result.data.exceptionOrNull()?.message ?: "Error al crear pedido")
-                    }
-                }
-            }
-        }
     }
 
     private fun limpiarPedido() {
