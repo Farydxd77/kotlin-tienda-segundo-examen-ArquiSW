@@ -9,16 +9,21 @@ import com.example.arquiprimerparcial.decorator.ProductoDecorador
 class ConPapas(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${producto.obtenerNombre()} + Papas"
+        return "${super.obtenerNombre()} + Papas"  // ✅ Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return producto.obtenerPrecio() + 3.0
+        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${producto.obtenerDescripcion()}, papas fritas crujientes"
+        return "${super.obtenerDescripcion()}, papas fritas crujientes"  // ✅ Llama a super
     }
+
+    /**
+     * Método extra que agrega funcionalidad adicional
+     */
+    private fun precioExtra(): Double = 3.0
 }
 
 /**
@@ -27,16 +32,21 @@ class ConPapas(producto: ProductoComponente) : ProductoDecorador(producto) {
 class ConRefresco(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${producto.obtenerNombre()} + Refresco"
+        return "${super.obtenerNombre()} + Refresco"  // ✅ Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return producto.obtenerPrecio() + 2.5
+        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${producto.obtenerDescripcion()}, refresco de 500ml"
+        return "${super.obtenerDescripcion()}, refresco de 500ml"  // ✅ Llama a super
     }
+
+    /**
+     * Método extra que agrega funcionalidad adicional
+     */
+    private fun precioExtra(): Double = 2.5
 }
 
 /**
@@ -45,16 +55,21 @@ class ConRefresco(producto: ProductoComponente) : ProductoDecorador(producto) {
 class ConArroz(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${producto.obtenerNombre()} + Arroz"
+        return "${super.obtenerNombre()} + Arroz"  // ✅ Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return producto.obtenerPrecio() + 2.0
+        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${producto.obtenerDescripcion()}, porción de arroz blanco"
+        return "${super.obtenerDescripcion()}, porción de arroz blanco"  // ✅ Llama a super
     }
+
+    /**
+     * Método extra que agrega funcionalidad adicional
+     */
+    private fun precioExtra(): Double = 2.0
 }
 
 /**
@@ -63,16 +78,21 @@ class ConArroz(producto: ProductoComponente) : ProductoDecorador(producto) {
 class ConQueso(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${producto.obtenerNombre()} + Queso"
+        return "${super.obtenerNombre()} + Queso"  // ✅ Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return producto.obtenerPrecio() + 1.5
+        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${producto.obtenerDescripcion()}, queso derretido"
+        return "${super.obtenerDescripcion()}, queso derretido"  // ✅ Llama a super
     }
+
+    /**
+     * Método extra que agrega funcionalidad adicional
+     */
+    private fun precioExtra(): Double = 1.5
 }
 
 /**
@@ -81,14 +101,19 @@ class ConQueso(producto: ProductoComponente) : ProductoDecorador(producto) {
 class ConTocino(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${producto.obtenerNombre()} + Tocino"
+        return "${super.obtenerNombre()} + Tocino"  // ✅ Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return producto.obtenerPrecio() + 2.5
+        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${producto.obtenerDescripcion()}, tocino crocante"
+        return "${super.obtenerDescripcion()}, tocino crocante"  // ✅ Llama a super
     }
+
+    /**
+     * Método extra que agrega funcionalidad adicional
+     */
+    private fun precioExtra(): Double = 2.5
 }
