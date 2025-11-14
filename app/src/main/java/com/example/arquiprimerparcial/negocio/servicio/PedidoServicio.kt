@@ -4,45 +4,54 @@ import com.example.arquiprimerparcial.data.dao.DetallePedidoDao
 import com.example.arquiprimerparcial.data.dao.Pedido
 import com.example.arquiprimerparcial.data.dao.PedidoDao
 import com.example.arquiprimerparcial.data.dao.ProductoDao
+import com.example.arquiprimerparcial.strategy.DescuentoContext
 import com.example.arquiprimerparcial.strategy.ResultadoDescuento
-import com.example.arquiprimerparcial.strategy.DescuentoStrategy
 import com.example.arquiprimerparcial.strategy.DescuentoStrategyFactory
-import com.example.arquiprimerparcial.strategy.impl.SinDescuentoStrategy
 import java.sql.Timestamp
 
+/**
+ * 💼 SERVICIO DE PEDIDOS
+ *
+ * Responsabilidades:
+ * - Crear y gestionar pedidos
+ * - Validar datos de negocio
+ * - Orquestar DAOs
+ * - USAR el Context para aplicar descuentos (NO ser el Context)
+ *
+ * ✅ Ahora cumple 100% con Single Responsibility Principle
+ */
 class PedidoServicio {
 
     private val pedidoDao: PedidoDao = PedidoDao()
     private val detallePedidoDao: DetallePedidoDao = DetallePedidoDao()
     private val productoDao: ProductoDao = ProductoDao()
 
-    private var descuentoStrategy: DescuentoStrategy = SinDescuentoStrategy()
+    // ✅ USA el Context (no ES el Context)
+    private val descuentoContext = DescuentoContext()
 
     /**
-     * 🎯 STRATEGY PATTERN - Cambiar estrategia de descuento dinámicamente
-     * ✅ CORRECTO: Permite cambiar la estrategia en tiempo de ejecución
+     * 🎯 APLICAR DESCUENTO usando el Context
+     *
+     * Flujo según diagrama:
+     * 1. Client llama a este método
+     * 2. Este método obtiene la Strategy del Factory
+     * 3. Pasa la Strategy al Context (setStrategy)
+     * 4. Context ejecuta la Strategy (doSomething)
      */
-    fun establecerEstrategiaDescuento(codigo: String?) {
-        descuentoStrategy = DescuentoStrategyFactory.obtenerStrategy(codigo)
+    fun aplicarDescuento(subtotal: Double, codigo: String?): ResultadoDescuento {
+        // 1️⃣ Obtener estrategia del Factory
+        val strategy = DescuentoStrategyFactory.obtenerStrategy(codigo)
+
+        // 2️⃣ Establecer estrategia en el Context (setStrategy)
+        descuentoContext.setStrategy(strategy)
+
+        // 3️⃣ Ejecutar a través del Context (doSomething)
+        return descuentoContext.aplicarDescuento(subtotal)
     }
 
     /**
-     * 🎯 STRATEGY PATTERN - Aplicar descuento usando la estrategia actual
-     * ✅ CORRECTO: USA la estrategia almacenada, NO crea una nueva
+     * Crear pedido primitivo (desde mapa)
      */
-    fun aplicarDescuento(subtotal: Double): ResultadoDescuento {
-        // ✅ SIMPLEMENTE DELEGA TODO A LA ESTRATEGIA
-        return descuentoStrategy.aplicarDescuento(subtotal)
-    }
-
-    /**
-     * 🎯 STRATEGY PATTERN - Versión simplificada que    establece y aplica en un solo paso
-     * Para mantener compatibilidad con código existente
-     */
-    fun aplicarDescuentoConCodigo(subtotal: Double, codigo: String?): ResultadoDescuento {
-        establecerEstrategiaDescuento(codigo)
-        return aplicarDescuento(subtotal)
-    }
     fun crearPedidoPrimitivo(pedidoData: Map<String, Any>): Result<Int> {
         return try {
             val nombreCliente = pedidoData["nombreCliente"] as String
@@ -64,12 +73,18 @@ class PedidoServicio {
         }
     }
 
+    /**
+     * Crear pedido con aplicación de descuento
+     */
     fun crearPedido(
         nombreCliente: String,
         detalles: List<Array<Any>>,
         codigoDescuento: String? = null
     ): Result<Int> {
         return try {
+            // ========================================
+            // VALIDACIONES DE NEGOCIO
+            // ========================================
             if (nombreCliente.isBlank()) {
                 return Result.failure(Exception("El nombre del cliente es requerido"))
             }
@@ -82,6 +97,7 @@ class PedidoServicio {
                 return Result.failure(Exception("El pedido debe tener al menos un producto"))
             }
 
+            // Validar stock de cada producto
             for (detalle in detalles) {
                 val idProducto = detalle[0] as Int
                 val cantidad = detalle[1] as Int
@@ -95,17 +111,24 @@ class PedidoServicio {
                 val nombreProducto = productoArray[1] as String
 
                 if (stock < cantidad) {
-                    return Result.failure(Exception("Stock insuficiente para $nombreProducto. Stock disponible: $stock"))
+                    return Result.failure(
+                        Exception("Stock insuficiente para $nombreProducto. Stock disponible: $stock")
+                    )
                 }
             }
 
+            // ========================================
             // 🎯 APLICAR STRATEGY DE DESCUENTO
+            // ========================================
             val subtotal = calcularTotalDetalles(detalles)
 
-            // ✅ CORRECTO: Establece la estrategia y aplica el descuento
-            val resultadoDescuento = aplicarDescuentoConCodigo(subtotal, codigoDescuento)
+            // ✅ Usar el método que implementa el patrón correctamente
+            val resultadoDescuento = aplicarDescuento(subtotal, codigoDescuento)
             val total = resultadoDescuento.total
 
+            // ========================================
+            // CREAR PEDIDO EN LA BASE DE DATOS
+            // ========================================
             val idPedido = pedidoDao.insertar(
                 nombreCliente = nombreCliente.trim(),
                 fechaPedido = Timestamp(System.currentTimeMillis()),
@@ -116,12 +139,15 @@ class PedidoServicio {
                 return Result.failure(Exception("Error al crear el pedido"))
             }
 
+            // ========================================
+            // GUARDAR DETALLES DEL PEDIDO
+            // ========================================
             val detallesParaInsertar = detalles.map { detalle ->
                 arrayOf<Any>(
                     idPedido,
-                    detalle[0] as Int,
-                    detalle[1] as Int,
-                    detalle[2] as Double
+                    detalle[0] as Int,  // idProducto
+                    detalle[1] as Int,  // cantidad
+                    detalle[2] as Double // precioUnitario
                 )
             }
 
@@ -130,6 +156,9 @@ class PedidoServicio {
                 return Result.failure(Exception("Error al guardar los detalles del pedido"))
             }
 
+            // ========================================
+            // ACTUALIZAR STOCK DE PRODUCTOS
+            // ========================================
             for (detalle in detalles) {
                 val idProducto = detalle[0] as Int
                 val cantidad = detalle[1] as Int
@@ -147,6 +176,9 @@ class PedidoServicio {
         }
     }
 
+    /**
+     * Calcular total de detalles (sin descuento)
+     */
     fun calcularTotalDetalles(detalles: List<Array<Any>>): Double {
         var total = 0.0
         for (detalle in detalles) {

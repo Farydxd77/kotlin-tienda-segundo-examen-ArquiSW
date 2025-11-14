@@ -1,7 +1,7 @@
 // ============================================
 // 🎨 CrearPedidoActivity.kt - VERSIÓN COMPLETA
 // ✅ RESPETA ARQUITECTURA 3 CAPAS
-// ✅ DECORATOR + STRATEGY + Extras guardados
+// ✅ DECORATOR + STRATEGY (con Context) + Extras guardados
 // ============================================
 
 package com.example.arquiprimerparcial.presentacion.ui
@@ -197,8 +197,6 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
 
         if (codigoDescuentoActual != null) {
-            // ✅ Re-establecer la estrategia antes de aplicar
-            pedidoServicio.establecerEstrategiaDescuento(codigoDescuentoActual)
             aplicarDescuento(codigoDescuentoActual)
         }
 
@@ -232,8 +230,6 @@ class CrearPedidoActivity : AppCompatActivity() {
                     else -> null
                 }
 
-                // ✅ CORRECTO: Establece la estrategia primero
-                pedidoServicio.establecerEstrategiaDescuento(codigo)
                 aplicarDescuento(codigo)
             }
             .setNegativeButton("Cancelar", null)
@@ -249,9 +245,9 @@ class CrearPedidoActivity : AppCompatActivity() {
             subtotalOriginal += (detalle["subtotal"] as Double)
         }
 
-        // 🎯 STRATEGY PATTERN CORRECTO
-        // La estrategia ya fue establecida en mostrarDialogoDescuentos()
-        val resultado = pedidoServicio.aplicarDescuento(subtotalOriginal)
+        // ✅ USAR EL SERVICIO que USA el CONTEXT
+        // Flujo: Activity → Servicio → Context → Strategy
+        val resultado = pedidoServicio.aplicarDescuento(subtotalOriginal, codigo)
 
         if (resultado.esValido) {
             descuentoAplicado = resultado.descuentoAplicado
@@ -525,8 +521,6 @@ class CrearPedidoActivity : AppCompatActivity() {
         }
 
         if (codigoDescuentoActual != null) {
-            // ✅ Re-establecer la estrategia antes de aplicar
-            pedidoServicio.establecerEstrategiaDescuento(codigoDescuentoActual)
             aplicarDescuento(codigoDescuentoActual)
         }
 
@@ -553,8 +547,6 @@ class CrearPedidoActivity : AppCompatActivity() {
             detallesPedido[index] = detalle
 
             if (codigoDescuentoActual != null) {
-                // ✅ Re-establecer la estrategia antes de aplicar
-                pedidoServicio.establecerEstrategiaDescuento(codigoDescuentoActual)
                 aplicarDescuento(codigoDescuentoActual)
             }
             actualizarUI()
@@ -657,14 +649,6 @@ class CrearPedidoActivity : AppCompatActivity() {
     private fun mostrarError(mensaje: String) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Error")
-            .setMessage(mensaje)
-            .setPositiveButton("OK", null)
-            .show()
-    }
-
-    private fun mostrarExito(mensaje: String) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Éxito")
             .setMessage(mensaje)
             .setPositiveButton("OK", null)
             .show()
