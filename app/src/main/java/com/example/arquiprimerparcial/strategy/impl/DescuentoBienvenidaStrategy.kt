@@ -14,9 +14,9 @@ class DescuentoBienvenidaStrategy : DescuentoStrategy {
         val total = subtotal - descuento
 
         val mensaje = if (esValido) {
-            "🎉 Descuento de Bienvenida: -S/ $montoFijo"
+            " Descuento de Bienvenida: -S/ $montoFijo"
         } else {
-            "⚠️ Descuento de Bienvenida requiere compra mínima de S/ $montoMinimo"
+            " Descuento de Bienvenida requiere compra mínima de S/ $montoMinimo"
         }
 
         return ResultadoDescuento(

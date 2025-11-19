@@ -20,9 +20,9 @@ class DescuentoBlackFridayStrategy : DescuentoStrategy {
         val total = subtotal - descuento
 
         val mensaje = if (subtotal >= umbralExtra) {
-            "🔥 Black Friday: ${porcentaje.toInt()}% OFF (¡40% por compra mayor a S/ $umbralExtra!)"
+            "Black Friday: ${porcentaje.toInt()}% OFF (¡40% por compra mayor a S/ $umbralExtra!)"
         } else {
-            "🔥 Black Friday: ${porcentaje.toInt()}% OFF"
+            "Black Friday: ${porcentaje.toInt()}% OFF"
         }
 
         return ResultadoDescuento(

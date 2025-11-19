@@ -14,9 +14,9 @@ class DescuentoNavidenoStrategy : DescuentoStrategy {
         val total = subtotal - descuento
 
         val mensaje = if (esValido) {
-            "✅ Descuento Navideño aplicado: $porcentaje% OFF"
+            "Descuento Navideño aplicado: $porcentaje% OFF"
         } else {
-            "⚠️ Descuento Navideño requiere compra mínima de S/ $montoMinimo"
+            "Descuento Navideño requiere compra mínima de S/ $montoMinimo"
         }
 
         return ResultadoDescuento(

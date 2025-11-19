@@ -4,20 +4,20 @@ import com.example.arquiprimerparcial.decorator.ProductoComponente
 import com.example.arquiprimerparcial.decorator.ProductoDecorador
 
 /**
- * 🍟 DECORADOR: Papas Fritas
+ * DECORADOR: Papas Fritas
  */
 class ConPapas(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${super.obtenerNombre()} + Papas"  // ✅ Llama a super
+        return "${super.obtenerNombre()} + Papas"  //  Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
+        return super.obtenerPrecio() + precioExtra()  //  Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${super.obtenerDescripcion()}, papas fritas crujientes"  // ✅ Llama a super
+        return "${super.obtenerDescripcion()}, papas fritas crujientes"  // Llama a super
     }
 
     /**
@@ -27,20 +27,20 @@ class ConPapas(producto: ProductoComponente) : ProductoDecorador(producto) {
 }
 
 /**
- * 🥤 DECORADOR: Refresco
+ *  DECORADOR: Refresco
  */
 class ConRefresco(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${super.obtenerNombre()} + Refresco"  // ✅ Llama a super
+        return "${super.obtenerNombre()} + Refresco"  // Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
+        return super.obtenerPrecio() + precioExtra()  //  Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${super.obtenerDescripcion()}, refresco de 500ml"  // ✅ Llama a super
+        return "${super.obtenerDescripcion()}, refresco de 500ml"  //  Llama a super
     }
 
     /**
@@ -50,20 +50,20 @@ class ConRefresco(producto: ProductoComponente) : ProductoDecorador(producto) {
 }
 
 /**
- * 🍚 DECORADOR: Arroz
+ * DECORADOR: Arroz
  */
 class ConArroz(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${super.obtenerNombre()} + Arroz"  // ✅ Llama a super
+        return "${super.obtenerNombre()} + Arroz"  // Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
+        return super.obtenerPrecio() + precioExtra()  // Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${super.obtenerDescripcion()}, porción de arroz blanco"  // ✅ Llama a super
+        return "${super.obtenerDescripcion()}, porción de arroz blanco"  //  Llama a super
     }
 
     /**
@@ -73,20 +73,20 @@ class ConArroz(producto: ProductoComponente) : ProductoDecorador(producto) {
 }
 
 /**
- * 🧀 DECORADOR: Queso
+ *  DECORADOR: Queso
  */
 class ConQueso(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${super.obtenerNombre()} + Queso"  // ✅ Llama a super
+        return "${super.obtenerNombre()} + Queso"  // Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
+        return super.obtenerPrecio() + precioExtra()  // Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${super.obtenerDescripcion()}, queso derretido"  // ✅ Llama a super
+        return "${super.obtenerDescripcion()}, queso derretido"  //  Llama a super
     }
 
     /**
@@ -96,20 +96,20 @@ class ConQueso(producto: ProductoComponente) : ProductoDecorador(producto) {
 }
 
 /**
- * 🥓 DECORADOR: Tocino
+ *  DECORADOR: Tocino
  */
 class ConTocino(producto: ProductoComponente) : ProductoDecorador(producto) {
 
     override fun obtenerNombre(): String {
-        return "${super.obtenerNombre()} + Tocino"  // ✅ Llama a super
+        return "${super.obtenerNombre()} + Tocino"  //  Llama a super
     }
 
     override fun obtenerPrecio(): Double {
-        return super.obtenerPrecio() + precioExtra()  // ✅ Llama a super primero
+        return super.obtenerPrecio() + precioExtra()  //  Llama a super primero
     }
 
     override fun obtenerDescripcion(): String {
-        return "${super.obtenerDescripcion()}, tocino crocante"  // ✅ Llama a super
+        return "${super.obtenerDescripcion()}, tocino crocante"  //  Llama a super
     }
 
     /**

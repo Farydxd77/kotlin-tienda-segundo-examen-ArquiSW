@@ -28,20 +28,20 @@ class ProductoDecoradorServicio(
     }
 
     /**
-     * 🎨 DECORATOR PATTERN - Aplicar decoradores a un producto real
+     *  DECORATOR PATTERN - Aplicar decoradores a un producto real
      *
      * @param idProducto ID del producto en la base de datos
      * @param extras Lista de extras a agregar
      * @return ProductoComponente decorado con precio actualizado
      */
     fun decorarProductoDeBD(idProducto: Int, extras: List<TipoExtra>): ProductoComponente? {
-        // 1️⃣ Obtener producto real de BD
+        //  Obtener producto real de BD
         val productoArray = productoServicio.obtenerProductoPorId(idProducto) ?: return null
 
-        // 2️⃣ Convertir a ProductoComponente (base para decorar)
+        // Convertir a ProductoComponente (base para decorar)
         var productoDecorado: ProductoComponente = ProductoBaseBD(productoArray)
 
-        // 3️⃣ Aplicar cada decorador en secuencia
+        //  Aplicar cada decorador en secuencia
         for (extra in extras) {
             productoDecorado = when (extra) {
                 TipoExtra.PAPAS -> ConPapas(productoDecorado)

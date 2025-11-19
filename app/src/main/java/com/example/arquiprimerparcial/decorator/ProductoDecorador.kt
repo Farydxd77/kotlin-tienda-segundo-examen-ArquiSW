@@ -1,7 +1,7 @@
 package com.example.arquiprimerparcial.decorator
 
 /**
- * 🎨 PATRÓN DECORATOR - Decorador Abstracto
+ *  PATRÓN DECORATOR - Decorador Abstracto
  * Clase base para todos los decoradores
  */
 abstract class ProductoDecorador(
